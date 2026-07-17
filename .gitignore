@@ -1,0 +1,9 @@
+# Secrets — NEVER commit (values live in GitHub Actions secrets / local .env only)
+.env
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# ponytail: history.json, runs.log, pending_post.json are committed ON PURPOSE
+# (the two-run approval design depends on committing pending_post.json) — do NOT ignore them.

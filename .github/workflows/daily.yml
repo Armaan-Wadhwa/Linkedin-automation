@@ -1,0 +1,75 @@
+# Daily AI-news digest — Phase 2 Run A (generate + Telegram approval request;
+# still NO posting — Run B reads the Approve/Reject decision).   # STEP [8]
+#
+# Cron notes (from project gotchas):
+# - GitHub cron is UTC and best-effort. Target post time is ~9:00 AM IST
+#   (03:30 UTC); we schedule ~35 min early on an odd minute to absorb delays.
+# - Free accounts: scheduled workflows require a public repo and are disabled
+#   after 60 days of repo inactivity — the runs.log commit below keeps the
+#   repo active on every run, success or failure.
+
+name: daily-digest
+
+on:
+  schedule:
+    - cron: '53 2 * * *'   # 02:53 UTC = 08:23 AM IST, odd minute, ~35 min buffer
+  workflow_dispatch: {}     # manual runs for testing
+
+permissions:
+  contents: write           # needed to commit history.json + runs.log
+
+concurrency:
+  group: daily-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate draft
+        id: gen
+        continue-on-error: true   # so the log/commit steps below always run
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          REDDIT_FEED_PARAMS: ${{ secrets.REDDIT_FEED_PARAMS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}   # STEP [8]
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}       # STEP [8]
+        run: python src/main.py
+
+      - name: Append run log (keeps repo active)
+        if: always()
+        run: echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') outcome=${{ steps.gen.outcome }}" >> runs.log
+
+      - name: Commit history and run log
+        if: always()
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add history.json runs.log
+          # STEP [8] pending_post.json only exists when generation succeeded;
+          # STEP [8] a bare git add of a missing file would fail this step.
+          if [ -f pending_post.json ]; then git add pending_post.json; fi   # STEP [8]
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: run log $(date -u '+%Y-%m-%d') [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push
+          fi
+
+      - name: Fail the run if generation failed
+        if: steps.gen.outcome == 'failure'
+        run: exit 1
