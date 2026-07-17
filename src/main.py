@@ -115,5 +115,7 @@ def run():
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):        # STEP [8] Windows cp1252 console
+        sys.stdout.reconfigure(encoding="utf-8")  # STEP [8] can't encode draft emoji
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     sys.exit(run())
