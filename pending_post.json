@@ -1,6 +1,8 @@
 {
-  "draft": "Apple is taking OpenAI to court in a highly public lawsuit that has legal experts divided.\n\nHere is what is happening in the AI space today.\n\n⚖️ Apple has officially filed a lawsuit against OpenAI. While the complaint is highly readable and intense, many industry experts seem to think that the allegations simply describe the way things are normally done in the tech industry, leaving many to wonder what Apple truly wants from this public dispute.\n\n📊 OpenAI CFO Sarah Friar has introduced a practical AI scorecard to help organizations measure their return on investment. The framework focuses on tracking specific metrics, including useful work, cost per successful task, dependability, and return on compute.\n\n💻 User reports on the new OpenAI 5.6 model highlight high adoption and tight resource constraints. Some developers report running out of usage limits two days in a row, leading to discussions about dropping Claude and Cursor subscriptions to consolidate budget into OpenAI's higher tiers.\n\nAs developers and tech leaders, we are seeing a shift in how we approach LLM integration. We are moving past the phase of simple experimentation and entering an era defined by strict financial auditing, resource management, and high-stakes legal battles.\n\nManaging token usage and API costs has become just as critical as choosing the right model architecture for our engineering pipelines.\n\nWhich metric in OpenAI's new ROI scorecard do you find most critical for your development pipeline?\n\n#AI #OpenAI #Apple #LLM #SoftwareEngineering",
-  "created_utc": "2026-07-17T19:33:34.260693+00:00",
-  "telegram_message_id": 5,
-  "status": "awaiting_approval"
+  "draft": "TEST DRAFT for Task 6 approval poller - not for posting.\n\nThis message exists only to verify the Approve/Reject buttons and the\napprove.py poller. Tap a button when asked.\n\n#AI #Test",
+  "created_utc": "2026-07-20T17:28:21.622886+00:00",
+  "telegram_message_id": 8,
+  "status": "rejected",
+  "decided_utc": "2026-07-20T17:31:36.360514+00:00",
+  "callback_update_id": 523661421
 }

@@ -134,3 +134,14 @@ TELEGRAM_TOKEN_ENV = "TELEGRAM_BOT_TOKEN"    # STEP [8] secret: env var name onl
 TELEGRAM_CHAT_ID_ENV = "TELEGRAM_CHAT_ID"    # STEP [8] secret: env var name only
 TELEGRAM_MSG_LIMIT = 4096                    # STEP [8] hard Bot API cap per message
 PENDING_POST_FILE = "pending_post.json"      # STEP [8] repo-root state file for Run B
+
+# ---------------------------------------------------------------------------
+# Approval poller / Run B (used by approve.py)                      # STEP [9]
+# ---------------------------------------------------------------------------
+# STEP [9] Draft is generated 02:53 UTC; the last approve.yml poll is 08:53 UTC,
+# STEP [9] so at the final poll the draft is 6h old. 7 leaves an hour of slack
+# STEP [9] for a late daily.yml, then expires the draft once polling stops.
+# STEP [9] NEVER raise above 24: Telegram discards unconfirmed updates at 24h,
+# STEP [9] so beyond that we would be waiting on a tap that can no longer arrive.
+APPROVAL_EXPIRY_H = 7
+TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offset depth
