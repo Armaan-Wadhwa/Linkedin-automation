@@ -156,7 +156,7 @@ TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offse
 LINKEDIN_TOKEN_ENV = "LINKEDIN_ACCESS_TOKEN"          # STEP [10] secret: env var NAME only
 LINKEDIN_PERSON_URN_ENV = "LINKEDIN_PERSON_URN"       # STEP [10] secret: env var NAME only
 LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts"  # STEP [10] official Posts API
-LINKEDIN_VERSION = "202506"                            # STEP [10] LinkedIn-Version header (bump here only)
+LINKEDIN_VERSION = "202607"                            # STEP [10] LinkedIn-Version header (bump here only; active for 12mo)
 # STEP [10] Standard-app token: 60-day credential, NO refresh. The issued-date
 # STEP [10] env var (ISO stamp you set at OAuth time) lets token_status.py warn
 # STEP [10] before expiry so Harvey can re-auth — non-fatal if missing/malformed.
