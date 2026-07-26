@@ -36,6 +36,24 @@ def _callback(update_id, data, chat=CHAT_ID_INT, sender=None, message_id=MSG_ID)
                                            "chat": {"id": chat}}}}
 
 
+def _photo_msg(update_id, file_id="large_fid", chat=CHAT_ID_INT, sender=None,
+               date=None):                                            # STEP [11]
+    """A Telegram photo message update (mimics getUpdates format)."""
+    if date is None:
+        date = int(datetime.now(timezone.utc).timestamp())
+    sender_id = CHAT_ID_INT if sender is None else sender
+    photo = [{"file_id": f"fid_{w}", "file_unique_id": f"u{w}",
+              "width": w, "height": w, "file_size": w * 10}
+             for w in (320, 640, 1280)]
+    photo[-1]["file_id"] = file_id   # largest photo carries the named id
+    return {"update_id": update_id,
+            "message": {"message_id": 900 + update_id,
+                        "from": {"id": sender_id},
+                        "chat": {"id": chat},
+                        "date": date,
+                        "photo": photo}}
+
+
 _UNSET = object()   # so created=None means "literally null", not "use default"
 
 
@@ -48,12 +66,11 @@ def _state(status="awaiting_approval", age_h=1, message_id=MSG_ID, created=_UNSE
 
 
 def _run(tmp, state, updates=(), raise_on=None,
-         post_result=(True, "urn:li:share:1")):
+         post_result=(True, "urn:li:share:1", False)):               # STEP [12]
     """Run approve.run() against a temp state file with getUpdates + post stubbed.
     Returns (exit_code, state_dict_or_None, telegram_calls, post_calls).
 
-    post_result: the (ok, result) tuple fake_post returns; defaults to a success
-    so the approve→post path completes to 'posted' (Task 7 happy path)."""
+    # STEP [12] post_result is a 3-tuple (ok, result, image_attached)."""
     path = os.path.join(tmp, "pending_post.json")
     if state is not None:
         with open(path, "w", encoding="utf-8") as fh:
@@ -70,7 +87,7 @@ def _run(tmp, state, updates=(), raise_on=None,
             raise RuntimeError("boom")
         return list(updates) if method == "getUpdates" else {"ok": True}
 
-    def fake_post(text):
+    def fake_post(text, image_ref=None):                              # STEP [12]
         post_calls.append(text)
         return post_result
 
@@ -179,7 +196,7 @@ def test_approve_post_failure_transitions_to_post_failed():
     with tempfile.TemporaryDirectory() as tmp:
         rc, saved, calls, post_calls = _run(
             tmp, _state(), [_callback(1, "approve")],
-            post_result=(False, "HTTP 500: server error"))
+            post_result=(False, "HTTP 500: server error", False))
     assert rc == 1, "post_failed must go red"
     assert saved["status"] == "post_failed", saved
     assert "HTTP 500" in saved["post_error"], saved
@@ -283,7 +300,7 @@ def test_post_re_read_guard_rejects_non_approved():
         with mock.patch.dict(os.environ, env), \
              mock.patch.object(approve, "PENDING_POST_PATH", path), \
              mock.patch.object(approve.post_linkedin, "post") as fake_post:
-            ok, post_id, err = approve._post_approved_draft()
+            ok, post_id, err, _, _ = approve._post_approved_draft()   # STEP [12]
         assert ok is False, ok
         assert "rejected" in err, err
         fake_post.assert_not_called()
@@ -331,6 +348,219 @@ def test_api_call_never_leaks_token():
     logged = buf.getvalue()
     assert "SECRET123" not in logged, "token leaked into logs!"
     assert "<token>" in logged
+
+
+# --- STEP [11] photo override tests ----------------------------------------
+
+def _run_with_photo(tmp, state_dict, updates, getfile_result=None,
+                    download_bytes=b"\x89PNGimg", post_result=(True, "urn:li:share:1", False)):  # STEP [12]
+    """Run approve.run() with photo-related stubs. Returns (rc, saved, api_calls).
+    # STEP [11] Standalone helper (not _run) because photo tests need getFile +
+    # STEP [11] download_file mocks that _run doesn't provide."""
+    path = os.path.join(tmp, "pending_post.json")
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(state_dict, fh)
+    calls = []
+
+    def fake_api(method, payload, token, **kw):
+        calls.append((method, payload))                              # STEP [12]
+        if method == "getUpdates":
+            return list(updates)
+        if method == "getFile":
+            return getfile_result
+        return {"ok": True}
+
+    env = {config.TELEGRAM_TOKEN_ENV: "TESTTOKEN", config.TELEGRAM_CHAT_ID_ENV: CHAT_ID}
+    with mock.patch.dict(os.environ, env), \
+         mock.patch.object(approve, "PENDING_POST_PATH", path), \
+         mock.patch.object(approve.telegram_api, "api_call", side_effect=fake_api), \
+         mock.patch.object(approve.telegram_api, "download_file",
+                           return_value=download_bytes), \
+         mock.patch.object(approve.post_linkedin, "post", return_value=post_result):
+        rc = approve.run()
+    with open(path, encoding="utf-8") as fh:
+        saved = json.load(fh)
+    return rc, saved, calls
+
+
+def test_photo_override_beats_story_image():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, calls = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10), _callback(11, "approve")],
+            getfile_result={"file_path": "photos/t.jpg", "file_size": 50000})
+    assert rc == 0, rc
+    assert saved["image_source"] == "telegram_override", saved
+    assert saved["image_url"].endswith(".jpg"), saved["image_url"]
+    assert saved["image_file_id"] == "large_fid", saved
+    assert saved["status"] == "posted", "approve+post must still complete"
+
+
+def test_photo_from_wrong_chat_ignored():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, _ = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10, chat=999), _callback(11, "approve")],
+            getfile_result={"file_path": "p/t.jpg", "file_size": 5000})
+    assert rc == 0, rc
+    assert saved["image_source"] == "story", "wrong-chat photo must not override"
+    assert saved["image_url"] == "http://story.example/img.jpg"
+
+
+def test_photo_before_draft_creation_ignored():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        # Photo sent 10h ago; draft created 1h ago → photo predates draft
+        old_ts = int((datetime.now(timezone.utc) - timedelta(hours=10)).timestamp())
+        rc, saved, _ = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10, date=old_ts), _callback(11, "approve")],
+            getfile_result={"file_path": "p/t.jpg", "file_size": 5000})
+    assert rc == 0, rc
+    assert saved["image_source"] == "story", "pre-draft photo must not override"
+
+
+def test_photo_download_failure_is_non_fatal():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, _ = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10), _callback(11, "approve")],
+            getfile_result={"file_path": "p/t.jpg", "file_size": 5000},
+            download_bytes=None)   # download fails
+    assert rc == 0, "download failure must not crash the run"
+    assert saved["image_source"] == "story", "story image preserved on dl failure"
+    assert saved["status"] == "posted", "post must still succeed without image"
+
+
+def test_no_photo_preserves_story_image():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, _ = _run_with_photo(
+            tmp, state, [_callback(11, "approve")])
+    assert rc == 0, rc
+    assert saved["image_source"] == "story", "no photo → story image unchanged"
+    assert saved["status"] == "posted"
+
+
+def test_photo_without_approval_saves_state():
+    # Photo found but no ✅ yet: state saved with override, status stays pending.
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, _ = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10)],   # photo only, no callback
+            getfile_result={"file_path": "p/t.jpg", "file_size": 5000})
+    assert rc == 0, rc
+    assert saved["image_source"] == "telegram_override", saved
+    assert saved["status"] == "awaiting_approval", "no ✅ → must not post"
+    assert saved["image_file_id"] == "large_fid"
+
+
+def test_photo_oversize_rejected():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, _ = _run_with_photo(
+            tmp, state,
+            [_photo_msg(10), _callback(11, "approve")],
+            getfile_result={"file_path": "p/huge.jpg",
+                            "file_size": config.IMAGE_MAX_BYTES + 1})
+    assert rc == 0, rc
+    assert saved["image_source"] == "story", "oversize photo must not override"
+
+
+# --- STEP [12] image_ref passing + announce tests --------------------------
+
+def test_image_ref_passed_to_post_from_state():
+    # _post_approved_draft builds image_ref from the re-read state and passes
+    # it to post_linkedin.post(). Captures the call args.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "pending_post.json")
+        state = _state(status="approved")
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        state["draft"] = "A draft."
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(state, fh)
+        env = {config.TELEGRAM_TOKEN_ENV: "T", config.TELEGRAM_CHAT_ID_ENV: CHAT_ID}
+        with mock.patch.dict(os.environ, env), \
+             mock.patch.object(approve, "PENDING_POST_PATH", path), \
+             mock.patch.object(approve.post_linkedin, "post",
+                               return_value=(True, "urn:li:share:1", True)) as fp:
+            approve._post_approved_draft()
+        args, kwargs = fp.call_args
+        assert args[0] == "A draft.", "draft text must be passed"
+        assert args[1] == {"url": "http://story.example/img.jpg",
+                           "source": "story"}, args                      # STEP [12]
+
+
+def test_no_image_ref_when_state_has_none():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "pending_post.json")
+        state = _state(status="approved", draft="A draft.")
+        # no image_url / image_source keys
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(state, fh)
+        env = {config.TELEGRAM_TOKEN_ENV: "T", config.TELEGRAM_CHAT_ID_ENV: CHAT_ID}
+        with mock.patch.dict(os.environ, env), \
+             mock.patch.object(approve, "PENDING_POST_PATH", path), \
+             mock.patch.object(approve.post_linkedin, "post",
+                               return_value=(True, "urn:li:share:1", False)) as fp:
+            approve._post_approved_draft()
+        assert fp.call_args.args[1] is None                              # STEP [12]
+
+
+def test_announce_says_with_image():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, calls = _run_with_photo(
+            tmp, state, [_callback(11, "approve")],
+            post_result=(True, "urn:li:share:1", True))   # image attached
+    assert rc == 0, rc
+    sends = [p["text"] for m, p in calls if m == "sendMessage"]
+    assert any("with image" in t for t in sends), sends
+
+
+def test_announce_says_text_only_when_image_unavailable():
+    with tempfile.TemporaryDirectory() as tmp:
+        state = _state()
+        state["image_url"] = "http://story.example/img.jpg"
+        state["image_source"] = "story"
+        rc, saved, calls = _run_with_photo(
+            tmp, state, [_callback(11, "approve")],
+            post_result=(True, "urn:li:share:1", False))  # image attempted, failed
+    assert rc == 0, rc
+    sends = [p["text"] for m, p in calls if m == "sendMessage"]
+    assert any("text-only" in t for t in sends), sends
+
+
+def test_announce_no_image_mention_when_not_attempted():
+    # No image_ref in state → announce must read exactly as Task 7 (no image note)
+    with tempfile.TemporaryDirectory() as tmp:
+        rc, saved, calls = _run_with_photo(
+            tmp, _state(), [_callback(11, "approve")],
+            post_result=(True, "urn:li:share:1", False))
+    sends = [p["text"] for m, p in calls if m == "sendMessage"]
+    assert any("Posted to LinkedIn" in t for t in sends), sends
+    assert not any("image" in t.lower() for t in sends), "must not mention image"
 
 
 if __name__ == "__main__":

@@ -46,7 +46,7 @@ def test_post_201_captures_id():
     with mock.patch.dict(os.environ, FAKE_ENV), \
          mock.patch.object(post_linkedin.requests, "post",
                            return_value=_resp(201, POST_ID)) as posted:
-        ok, result = post_linkedin.post("draft body")
+        ok, result, _ = post_linkedin.post("draft body")
     assert ok is True, (ok, result)
     assert result == POST_ID, result
     # Verify the official Posts API contract (author, visibility, distribution…)
@@ -71,7 +71,7 @@ def test_post_non_201_is_failure():
     with mock.patch.dict(os.environ, FAKE_ENV), \
          mock.patch.object(post_linkedin.requests, "post",
                            return_value=_resp(400, None, '{"message":"bad request"}')):
-        ok, result = post_linkedin.post("draft")
+        ok, result, _ = post_linkedin.post("draft")
     assert ok is False, (ok, result)
     assert "HTTP 400" in result, result
     assert "bad request" in result
@@ -83,7 +83,7 @@ def test_post_201_without_id_is_failure():
     with mock.patch.dict(os.environ, FAKE_ENV), \
          mock.patch.object(post_linkedin.requests, "post",
                            return_value=_resp(201, post_id=None)):
-        ok, result = post_linkedin.post("draft")
+        ok, result, _ = post_linkedin.post("draft")
     assert ok is False, (ok, result)
     assert "x-restli-id" in result, result
 
@@ -91,7 +91,7 @@ def test_post_201_without_id_is_failure():
 def test_post_missing_env():
     with mock.patch.dict(os.environ, {}, clear=True), \
          mock.patch.object(post_linkedin.requests, "post") as posted:
-        ok, result = post_linkedin.post("draft")
+        ok, result, _ = post_linkedin.post("draft")
     assert ok is False, (ok, result)
     assert "not set" in result, result
     posted.assert_not_called()
@@ -100,7 +100,7 @@ def test_post_missing_env():
 def test_post_empty_text_is_failure():
     with mock.patch.dict(os.environ, FAKE_ENV), \
          mock.patch.object(post_linkedin.requests, "post") as posted:
-        ok, result = post_linkedin.post("")
+        ok, result, _ = post_linkedin.post("")
     assert ok is False, (ok, result)
     posted.assert_not_called()
 
@@ -110,7 +110,7 @@ def test_post_dry_run_no_api_call():
     env[config.LINKEDIN_DRY_RUN_ENV] = "1"
     with mock.patch.dict(os.environ, env), \
          mock.patch.object(post_linkedin.requests, "post") as posted:
-        ok, result = post_linkedin.post("dry-run draft")
+        ok, result, _ = post_linkedin.post("dry-run draft")
     assert ok is True, (ok, result)
     assert result.startswith("DRY_RUN_"), result
     posted.assert_not_called()
@@ -126,7 +126,7 @@ def test_post_scrubs_token_from_exception():
             f"HTTPSConnectionPool host=api.linkedin.com Bearer {TOKEN} refused")
         with mock.patch.dict(os.environ, FAKE_ENV), \
              mock.patch.object(post_linkedin.requests, "post", side_effect=boom):
-            ok, result = post_linkedin.post("draft")
+            ok, result, _ = post_linkedin.post("draft")
     finally:
         post_linkedin.log.removeHandler(handler)
     assert ok is False, (ok, result)
@@ -138,9 +138,137 @@ def test_post_never_raises_on_timeout():
     boom = post_linkedin.requests.exceptions.Timeout("connection timed out")
     with mock.patch.dict(os.environ, FAKE_ENV), \
          mock.patch.object(post_linkedin.requests, "post", side_effect=boom):
-        ok, result = post_linkedin.post("draft")   # must NOT raise
+        ok, result, _ = post_linkedin.post("draft")   # must NOT raise
     assert ok is False, (ok, result)
     assert "timed out" in result or "Timeout" in result, result
+
+
+# --- image upload (STEP [12]) ----------------------------------------------
+
+def test_post_with_image_attached():
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_try_upload_image",
+                           return_value="urn:li:image:123") as try_img, \
+         mock.patch.object(post_linkedin.requests, "post",
+                           return_value=_resp(201, POST_ID)) as posted:
+        ok, result, img = post_linkedin.post(
+            "draft", {"url": "http://x/a.jpg", "source": "story"})
+    assert ok is True, (ok, result)
+    assert result == POST_ID
+    assert img is True, "image_attached must be True"
+    body = posted.call_args.kwargs["json"]
+    assert body["content"]["media"]["id"] == "urn:li:image:123", body
+
+
+def test_post_image_failure_falls_back_to_text_only():
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_try_upload_image", return_value=None), \
+         mock.patch.object(post_linkedin.requests, "post",
+                           return_value=_resp(201, POST_ID)) as posted:
+        ok, result, img = post_linkedin.post(
+            "draft", {"url": "http://x/a.jpg", "source": "story"})
+    assert ok is True, "image failure must NOT fail the post"
+    assert img is False, "image_attached must be False on fallback"
+    body = posted.call_args.kwargs["json"]
+    assert "content" not in body, "failed image must not appear in body"
+
+
+def test_post_no_image_ref_unchanged():
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin.requests, "post",
+                           return_value=_resp(201, POST_ID)) as posted:
+        ok, result, img = post_linkedin.post("draft")
+    assert ok is True
+    assert img is False
+    body = posted.call_args.kwargs["json"]
+    assert "content" not in body
+
+
+def test_post_dry_run_with_image():
+    env = dict(FAKE_ENV)
+    env[config.LINKEDIN_DRY_RUN_ENV] = "1"
+    with mock.patch.dict(os.environ, env), \
+         mock.patch.object(post_linkedin.requests, "post") as posted:
+        ok, result, img = post_linkedin.post(
+            "draft", {"url": "http://x/a.jpg", "source": "story"})
+    assert ok is True
+    assert img is True
+    assert result.startswith("DRY_RUN_")
+    posted.assert_not_called()
+
+
+def test_detect_jpeg():
+    assert post_linkedin._detect_content_type(b"\xff\xd8\xff\xe0data") == "image/jpeg"
+
+
+def test_detect_png():
+    assert post_linkedin._detect_content_type(b"\x89PNG\r\n\x1a\n") == "image/png"
+
+
+def test_detect_unknown_and_empty():
+    assert post_linkedin._detect_content_type(b"GIF89a") is None
+    assert post_linkedin._detect_content_type(b"") is None
+    assert post_linkedin._detect_content_type(None) is None
+
+
+def test_try_upload_image_happy_path():
+    jpeg = b"\xff\xd8\xff\xe0" + b"x" * 1000
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_get_image_bytes",
+                           return_value=(jpeg, "image/jpeg")), \
+         mock.patch.object(post_linkedin, "_initialize_upload",
+                           return_value=("https://upload.url", "urn:li:image:9")), \
+         mock.patch.object(post_linkedin, "_upload_bytes", return_value=True):
+        urn = post_linkedin._try_upload_image(
+            TOKEN, URN, {"url": "http://x", "source": "story"})
+    assert urn == "urn:li:image:9"
+
+
+def test_try_upload_image_oversize():
+    big = b"\xff\xd8\xff" + b"x" * config.IMAGE_MAX_BYTES
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_get_image_bytes",
+                           return_value=(big, "image/jpeg")), \
+         mock.patch.object(post_linkedin, "_initialize_upload") as init:
+        urn = post_linkedin._try_upload_image(
+            TOKEN, URN, {"url": "http://x", "source": "story"})
+    assert urn is None
+    init.assert_not_called()
+
+
+def test_try_upload_image_wrong_type():
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_get_image_bytes",
+                           return_value=(None, None)):
+        urn = post_linkedin._try_upload_image(
+            TOKEN, URN, {"url": "http://x", "source": "story"})
+    assert urn is None
+
+
+def test_try_upload_image_init_failure():
+    jpeg = b"\xff\xd8\xff" + b"x" * 100
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_get_image_bytes",
+                           return_value=(jpeg, "image/jpeg")), \
+         mock.patch.object(post_linkedin, "_initialize_upload", return_value=None), \
+         mock.patch.object(post_linkedin, "_upload_bytes") as upload:
+        urn = post_linkedin._try_upload_image(
+            TOKEN, URN, {"url": "http://x", "source": "story"})
+    assert urn is None
+    upload.assert_not_called()
+
+
+def test_try_upload_image_put_failure():
+    jpeg = b"\xff\xd8\xff" + b"x" * 100
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(post_linkedin, "_get_image_bytes",
+                           return_value=(jpeg, "image/jpeg")), \
+         mock.patch.object(post_linkedin, "_initialize_upload",
+                           return_value=("https://upload.url", "urn:li:image:9")), \
+         mock.patch.object(post_linkedin, "_upload_bytes", return_value=False):
+        urn = post_linkedin._try_upload_image(
+            TOKEN, URN, {"url": "http://x", "source": "story"})
+    assert urn is None
 
 
 # --- token_status ----------------------------------------------------------

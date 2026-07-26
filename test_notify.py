@@ -87,12 +87,14 @@ def test_send_draft_missing_env():
     post.assert_not_called()
 
 
-def _stub_run(tmp, send_result):
-    """Run main.run() with fetch/generate/notify stubbed, real rank+history."""
+def _stub_run(tmp, send_result, story_image=None):
+    """Run main.run() with fetch/generate/notify stubbed, real rank+history.
+    # STEP [11] story_image controls the top story's image_url (None = no image)."""
     story = {"source_id": 1, "source_name": "Test", "priority": 6,
              "title": "Anthropic launches test thing", "link": "http://x",
              "summary": "some summary",
-             "published": datetime.now(timezone.utc)}
+             "published": datetime.now(timezone.utc),
+             "image_url": story_image}                               # STEP [11]
     draft = "Hook line under 140 chars.\n\nBody paragraph.\n\n#AI #LLM"
     hist_path = os.path.join(tmp, "history.json")
     pend_path = os.path.join(tmp, "pending_post.json")
@@ -151,6 +153,24 @@ def test_run_notify_failure_goes_red_but_records_history():
     assert pending["status"] == "notify_failed", pending
     assert pending["telegram_message_id"] is None
     assert len(history["hashes"]) == 1, "notify failure must still record history"
+
+
+# STEP [11] main.py carries the top story's image_url into pending_post.json.
+def test_run_writes_image_url_from_top_story():
+    with tempfile.TemporaryDirectory() as tmp:
+        rc, pending, _, _ = _stub_run(tmp, (True, 42),
+                                      story_image="http://example.com/a.jpg")
+    assert rc == 0, rc
+    assert pending["image_url"] == "http://example.com/a.jpg", pending
+    assert pending["image_source"] == "story", pending
+
+
+def test_run_no_image_writes_none():
+    with tempfile.TemporaryDirectory() as tmp:
+        rc, pending, _, _ = _stub_run(tmp, (True, 42), story_image=None)
+    assert rc == 0, rc
+    assert pending["image_url"] is None, pending
+    assert pending["image_source"] is None, pending
 
 
 if __name__ == "__main__":

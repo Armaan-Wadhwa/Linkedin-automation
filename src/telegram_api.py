@@ -67,3 +67,24 @@ def api_call(method, payload, token, quiet=False):
         fail("%s: %s: %s", method, type(exc).__name__,
              str(exc).replace(token, "<token>"))
         return None
+
+
+def download_file(file_path, token):                                  # STEP [11]
+    """Download a file from Telegram's file endpoint. Returns raw bytes, or
+    None on any failure. Never raises; scrubs the token from exceptions.
+
+    # STEP [11] Used by approve.py to fetch Harvey's override photo: getFile
+    # STEP [11] returns a file_path, then this hits the /file/bot<token>/ route
+    # STEP [11] (a raw GET, not a Bot API method — hence a separate helper)."""
+    try:
+        resp = requests.get(f"{API_BASE}/file/bot{token}/{file_path}",
+                            timeout=config.TIMEOUT)
+        if resp.status_code != 200:
+            log.warning("download_file: HTTP %s — file not retrieved",
+                        resp.status_code)
+            return None
+        return resp.content
+    except Exception as exc:  # noqa: BLE001 — file endpoint down must not crash
+        log.warning("download_file: %s: %s", type(exc).__name__,
+                    str(exc).replace(token, "<token>"))
+        return None

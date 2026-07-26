@@ -33,6 +33,8 @@ log = logging.getLogger(__name__)
 
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
+# STEP [11] first <img src="..."> in HTML — used to extract article images
+_IMG_SRC_RE = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
 
 
 def _clean_text(html_or_text, limit=500):
@@ -41,6 +43,61 @@ def _clean_text(html_or_text, limit=500):
         return ""
     text = _WS_RE.sub(" ", _TAG_RE.sub(" ", html_or_text)).strip()
     return text[:limit]
+
+
+def _extract_image(entry):                                            # STEP [11]
+    """Best-effort image URL from a feed entry, or None.
+
+    # STEP [11] Checks in priority order: media:content → media:thumbnail →
+    # STEP [11] enclosure(image/*) → first <img src> in content/summary.
+    # STEP [11] Never raises — a malformed entry yields None, not a crash.
+    # STEP [11] 8a only CAPTURES the URL; download/validation is 8b's job."""
+    try:
+        # 1. media:content — usually the highest-quality article image.
+        for media in entry.get("media_content", []) or []:
+            if not isinstance(media, dict):
+                continue
+            url = media.get("url")
+            if not url:
+                continue
+            mtype = (media.get("type") or "").lower()
+            if not mtype or mtype.startswith("image/"):
+                return url
+
+        # 2. media:thumbnail — lower-res but commonly present (Reddit, YouTube).
+        for thumb in entry.get("media_thumbnail", []) or []:
+            if not isinstance(thumb, dict):
+                continue
+            url = thumb.get("url")
+            if url:
+                return url
+
+        # 3. enclosure with an image MIME type.
+        for link in entry.get("links", []) or []:
+            if not isinstance(link, dict):
+                continue
+            if link.get("rel") == "enclosure" and \
+               (link.get("type") or "").lower().startswith("image/"):
+                url = link.get("href") or link.get("url")
+                if url:
+                    return url
+
+        # 4. First <img src> in content or summary HTML.
+        for field in ("content", "summary", "description"):
+            html = ""
+            if field == "content":
+                contents = entry.get("content", [])
+                if contents and isinstance(contents[0], dict):
+                    html = contents[0].get("value", "")
+            else:
+                html = entry.get(field, "") or ""
+            if html:
+                match = _IMG_SRC_RE.search(html)
+                if match:
+                    return match.group(1)
+    except Exception:  # noqa: BLE001 — never let image extraction crash a feed
+        pass
+    return None
 
 
 def _entry_datetime(entry):
@@ -115,6 +172,7 @@ def fetch_source(source_id, name, url, priority):
             "link": link,
             "summary": _clean_text(entry.get("summary", entry.get("description", ""))),
             "published": _entry_datetime(entry),
+            "image_url": _extract_image(entry),                       # STEP [11]
         })
 
     # Feeds are not reliably sorted (e.g. VentureBeat, GitHub-hosted feeds):

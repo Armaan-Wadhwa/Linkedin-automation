@@ -113,6 +113,8 @@ def run():
         "created_utc": datetime.now(timezone.utc).isoformat(),       # STEP [8]
         "telegram_message_id": message_id,                           # STEP [8]
         "status": "awaiting_approval" if ok else "notify_failed",    # STEP [8]
+        "image_url": (top[0].get("image_url") if top else None),     # STEP [11]
+        "image_source": "story" if (top and top[0].get("image_url")) else None,  # STEP [11]
     }                                                                # STEP [8]
     try:                                                             # STEP [8]
         with open(PENDING_POST_PATH, "w", encoding="utf-8") as fh:   # STEP [8]

@@ -156,6 +156,7 @@ TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offse
 LINKEDIN_TOKEN_ENV = "LINKEDIN_ACCESS_TOKEN"          # STEP [10] secret: env var NAME only
 LINKEDIN_PERSON_URN_ENV = "LINKEDIN_PERSON_URN"       # STEP [10] secret: env var NAME only
 LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts"  # STEP [10] official Posts API
+LINKEDIN_IMAGES_URL = "https://api.linkedin.com/rest/images"  # STEP [12] image upload (initializeUpload)
 LINKEDIN_VERSION = "202607"                            # STEP [10] LinkedIn-Version header (bump here only; active for 12mo)
 # STEP [10] Standard-app token: 60-day credential, NO refresh. The issued-date
 # STEP [10] env var (ISO stamp you set at OAuth time) lets token_status.py warn
@@ -166,3 +167,15 @@ LINKEDIN_TOKEN_WARN_DAYS = 50                          # STEP [10] re-auth nudge
 # STEP [10] WITHOUT calling LinkedIn — proves the approve→post path end-to-end
 # STEP [10] with a real Telegram tap while posting nothing live.
 LINKEDIN_DRY_RUN_ENV = "LINKEDIN_DRY_RUN"              # STEP [10] =1 → fake success, no API call
+
+# ---------------------------------------------------------------------------
+# Image attachment (Phase 3, Task 8)                                # STEP [11]
+# ---------------------------------------------------------------------------
+# STEP [11] Image candidates come from two sources: the top-ranked story's
+# STEP [11] feed image (auto), or a Telegram photo reply (manual override).
+# STEP [11] An image failure ALWAYS downgrades to text-only — it must never
+# STEP [11] block, delay, or fail a post. Validation (type/size) happens in 8b
+# STEP [11] before the LinkedIn upload; 8a only captures the candidates.
+IMAGE_MAX_BYTES = 5_242_880        # STEP [11] 5 MB LinkedIn image upload cap
+IMAGE_ALLOWED_TYPES = ("image/jpeg", "image/png")  # STEP [11] LinkedIn-accepted
+IMAGE_TEMP_PREFIX = "digest_photo_"  # STEP [11] tempfile prefix for TG photos
