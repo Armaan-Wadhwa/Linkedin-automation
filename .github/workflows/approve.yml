@@ -1,13 +1,13 @@
-# Approval poller — Phase 2 Run B (records Harvey's Telegram decision).
-# STILL NO POSTING: this workflow only writes approved/rejected into
-# pending_post.json. Task 7 adds the LinkedIn step.
+# Approval poller — Phase 2 Run B (records Harvey's Telegram decision AND,  # STEP [10]
+# on a winning ✅, posts the approved draft to LinkedIn in the same run).   # STEP [10]
 #
 # Notes:
 # - Polls every 30 min for ~6h so a tap is not lost if Harvey is away from his
 #   phone when the draft lands. config.APPROVAL_EXPIRY_H sits just past the
 #   last poll, so an untapped draft expires instead of lingering approvable.
 # - Same concurrency group as daily.yml: both write pending_post.json and
-#   push, so they MUST serialize.
+#   push, so they MUST serialize (this also means daily.yml can't interrupt
+#   the atomic approve→post sequence in this run).
 
 name: approve-digest
 
@@ -52,6 +52,12 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}        # STEP [10]
+          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}            # STEP [10]
+          LINKEDIN_TOKEN_ISSUED_UTC: ${{ secrets.LINKEDIN_TOKEN_ISSUED_UTC }}# STEP [10]
+          # LINKEDIN_DRY_RUN is unset in production; set to "1" only for a
+          # workflow_dispatch test run that should exercise the full path
+          # without publishing anything live.
         run: python src/approve.py
 
       - name: Append run log (keeps repo active)

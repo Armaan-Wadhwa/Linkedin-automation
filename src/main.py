@@ -45,15 +45,37 @@ def run():
     # STEP [8] every run. Rewrite it to a terminal status now (NOT delete —
     # STEP [8] the commit step can only `git add` a file that exists), so no
     # STEP [8] early exit or crash today leaves an old draft approvable.
-    if os.path.exists(PENDING_POST_PATH):                            # STEP [8]
-        try:                                                         # STEP [8]
-            with open(PENDING_POST_PATH, "w", encoding="utf-8") as fh:  # STEP [8]
-                json.dump({"status": "superseded"}, fh, indent=2)    # STEP [8]
-        except OSError as exc:                                       # STEP [8]
-            log.error("run: cannot invalidate stale %s (%s) — aborting so "
-                      "an old draft can never be approved",
-                      PENDING_POST_PATH, exc)                        # STEP [8]
-            return 1                                                 # STEP [8]
+    #
+    # STEP [10] GUARD: only clobber an UN-ACTIONED stale draft. Terminal /
+    # STEP [10] retryable states from Task 7 (posted / approved / post_failed /
+    # STEP [10] rejected / expired) must survive — "posted" carries the
+    # STEP [10] linkedin_post_id audit trail, "approved" is the retryable
+    # STEP [10] state approve.py picks up on its next poll. Clobbering those
+    # STEP [10] would lose the post record or a pending retry. The concurrency
+    # STEP [10] group already prevents a same-moment approve.py interruption,
+    # STEP [10] so this guard is defense-in-depth for the audit trail.
+    if os.path.exists(PENDING_POST_PATH):                            # STEP [10]
+        prev_status = None                                          # STEP [10]
+        try:                                                         # STEP [10]
+            with open(PENDING_POST_PATH, "r", encoding="utf-8") as fh:  # STEP [10]
+                prev = json.load(fh)                                 # STEP [10]
+            if isinstance(prev, dict):                               # STEP [10]
+                prev_status = prev.get("status")                     # STEP [10]
+        except (OSError, json.JSONDecodeError):                      # STEP [10]
+            prev_status = None   # corrupt → can't trust it → supersede  # STEP [10]
+        if prev_status in ("awaiting_approval", "notify_failed",      # STEP [10]
+                           "superseded", None):                       # STEP [10]
+            try:                                                     # STEP [10]
+                with open(PENDING_POST_PATH, "w", encoding="utf-8") as fh:  # STEP [10]
+                    json.dump({"status": "superseded"}, fh, indent=2)  # STEP [10]
+            except OSError as exc:                                   # STEP [10]
+                log.error("run: cannot invalidate stale %s (%s) — aborting so "
+                          "an old draft can never be approved",
+                          PENDING_POST_PATH, exc)                    # STEP [10]
+                return 1                                             # STEP [10]
+        else:                                                        # STEP [10]
+            log.info("run: leaving pending_post.json alone "          # STEP [10]
+                     "(status=%s is terminal/retryable)", prev_status)  # STEP [10]
 
     stories = fetch.fetch_all()
     if not stories:

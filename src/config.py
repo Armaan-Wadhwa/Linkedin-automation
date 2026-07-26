@@ -145,3 +145,24 @@ PENDING_POST_FILE = "pending_post.json"      # STEP [8] repo-root state file for
 # STEP [9] so beyond that we would be waiting on a tap that can no longer arrive.
 APPROVAL_EXPIRY_H = 7
 TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offset depth
+
+# ---------------------------------------------------------------------------
+# LinkedIn posting (used by post_linkedin.py / approve.py)           # STEP [10]
+# ---------------------------------------------------------------------------
+# STEP [10] Official "Share on LinkedIn" product, w_member_social scope,
+# STEP [10] POST https://api.linkedin.com/rest/posts — the ONLY sanctioned
+# STEP [10] method (hard constraint #2: no cookie/session/scraping ever).
+# STEP [10] env-var NAMES only here; values live in GitHub secrets / .env.
+LINKEDIN_TOKEN_ENV = "LINKEDIN_ACCESS_TOKEN"          # STEP [10] secret: env var NAME only
+LINKEDIN_PERSON_URN_ENV = "LINKEDIN_PERSON_URN"       # STEP [10] secret: env var NAME only
+LINKEDIN_POSTS_URL = "https://api.linkedin.com/rest/posts"  # STEP [10] official Posts API
+LINKEDIN_VERSION = "202506"                            # STEP [10] LinkedIn-Version header (bump here only)
+# STEP [10] Standard-app token: 60-day credential, NO refresh. The issued-date
+# STEP [10] env var (ISO stamp you set at OAuth time) lets token_status.py warn
+# STEP [10] before expiry so Harvey can re-auth — non-fatal if missing/malformed.
+LINKEDIN_TOKEN_ISSUED_UTC_ENV = "LINKEDIN_TOKEN_ISSUED_UTC"  # STEP [10] ISO date for age check
+LINKEDIN_TOKEN_WARN_DAYS = 50                          # STEP [10] re-auth nudge threshold (dies at 60d)
+# STEP [10] Dry-run switch: =1 logs the exact request and returns a fake success
+# STEP [10] WITHOUT calling LinkedIn — proves the approve→post path end-to-end
+# STEP [10] with a real Telegram tap while posting nothing live.
+LINKEDIN_DRY_RUN_ENV = "LINKEDIN_DRY_RUN"              # STEP [10] =1 → fake success, no API call
