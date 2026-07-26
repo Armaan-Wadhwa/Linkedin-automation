@@ -2,7 +2,9 @@
   "draft": "Is paying double for flagship AI models becoming obsolete?\n\nThe cost-to-performance ratio of frontier models is shifting rapidly, while security-specific orchestration is starting to outperform general-purpose giants.\n\nHere are the key developments from the last 24 hours:\n\n🤖 Anthropic released Claude Opus 5 to replace its 4.8 model as the flagship tier. It maintains pricing at $5 per million input tokens and $25 per million output tokens, but introduces frontier-class agentic coding and computer use capabilities that approach Fable 5 intelligence at half the cost.\n\n🛡️ Sakana AI launched Fugu-Cyber, a security-tuned endpoint on its Fugu orchestration model. It scored 86.9% on CyberGym and 72.1% on CTI-REALM, edging out GPT-5.5-Cyber. Access to this model is restricted, requiring manual approval, adherence to a defensive-use policy, and enrollment in the Token Plan.\n\n👥 Andrej Karpathy removed Anthropic from his X bio. The prominent open-source advocate and OpenAI co-founder had joined Anthropic only a few months ago, making this apparent departure highly unexpected for the developer community.\n\nThese shifts suggest we are entering an era of highly specialized, defensive security models and more affordable agentic workflows.\n\nIf you are building agentic workflows, will you migrate your pipelines to Claude Opus 5 or stick with your current LLM setup?\n\n#AI #LLM #Claude #SakanaAI #SoftwareEngineering",
   "created_utc": "2026-07-26T10:56:46.473619+00:00",
   "telegram_message_id": 12,
-  "status": "approved",
+  "status": "posted",
   "decided_utc": "2026-07-26T11:01:32.031829+00:00",
-  "callback_update_id": 523661429
+  "callback_update_id": 523661429,
+  "posted_utc": "2026-07-26T11:31:57.120090+00:00",
+  "linkedin_post_id": "urn:li:share:7487107435820888064"
 }
