@@ -23,6 +23,7 @@ import os
 import re
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode   # STEP [13]
 
 import feedparser
 import requests
@@ -100,6 +101,27 @@ def _extract_image(entry):                                            # STEP [11
     return None
 
 
+def _normalize_image_url(url):                                      # STEP [13]
+    """Strip webp/avif-forcing query params so CDNs serve real JPEG/PNG bytes.
+
+    # STEP [13] LinkedIn (via post_linkedin._detect_content_type) accepts ONLY
+    # STEP [13] JPEG/PNG magic bytes. Reddit/CDN preview URLs commonly append
+    # STEP [13] &auto=webp / &format=webp, which make them serve WebP — the sniff
+    # STEP [13] rejects it and the post silently falls back to text-only. Removing
+    # STEP [13] those params (the path already ends in .png/.jpg) yields real bytes.
+    # STEP [13] Best-effort: any parse failure returns the original url untouched."""
+    if not url or not isinstance(url, str) or "?" not in url:
+        return url
+    try:
+        parts = urlsplit(url)
+        kept = [(k, v) for k, v in parse_qsl(parts.query)
+                if not (k == "auto" and v == "webp")
+                and not (k == "format" and v in ("webp", "avif", "pjpg"))]
+        return urlunsplit(parts._replace(query=urlencode(kept)))
+    except Exception:  # noqa: BLE001 — never let URL cleaning crash a feed
+        return url
+
+
 def _entry_datetime(entry):
     """Best-effort UTC datetime for a feed entry, or None."""
     parsed = entry.get("published_parsed") or entry.get("updated_parsed")
@@ -172,7 +194,7 @@ def fetch_source(source_id, name, url, priority):
             "link": link,
             "summary": _clean_text(entry.get("summary", entry.get("description", ""))),
             "published": _entry_datetime(entry),
-            "image_url": _extract_image(entry),                       # STEP [11]
+            "image_url": _normalize_image_url(_extract_image(entry)),  # STEP [11] # STEP [13]
         })
 
     # Feeds are not reliably sorted (e.g. VentureBeat, GitHub-hosted feeds):

@@ -117,6 +117,21 @@ def test_completely_broken_entry():
     assert fetch._extract_image({}) is None
 
 
+# --- _normalize_image_url (STEP [13]) --------------------------------------
+def test_normalize_strips_webp_params():
+    reddit = ("https://preview.redd.it/abc.png?width=640&crop=smart"
+              "&auto=webp&s=abc123")
+    assert fetch._normalize_image_url(reddit) == \
+        "https://preview.redd.it/abc.png?width=640&crop=smart&s=abc123"
+    assert fetch._normalize_image_url("http://x/a.jpg?format=webp&b=2") == \
+        "http://x/a.jpg?b=2"
+    assert fetch._normalize_image_url("http://x/a.jpg?q=90&strip=all") == \
+        "http://x/a.jpg?q=90&strip=all"   # non-webp params preserved
+    assert fetch._normalize_image_url("http://x/a.jpg") == "http://x/a.jpg"  # no query
+    assert fetch._normalize_image_url("") == ""                            # STEP [13]
+    assert fetch._normalize_image_url(None) is None                        # STEP [13]
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
