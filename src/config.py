@@ -138,12 +138,16 @@ PENDING_POST_FILE = "pending_post.json"      # STEP [8] repo-root state file for
 # ---------------------------------------------------------------------------
 # Approval poller / Run B (used by approve.py)                      # STEP [9]
 # ---------------------------------------------------------------------------
-# STEP [9] Draft is generated 02:53 UTC; the last approve.yml poll is 08:53 UTC,
-# STEP [9] so at the final poll the draft is 6h old. 7 leaves an hour of slack
-# STEP [9] for a late daily.yml, then expires the draft once polling stops.
+# STEP [9] Draft is generated 02:53 UTC; the last approve.yml poll is 10:53 UTC,
+# STEP [9] so at the final poll the draft is 8h old. 14h leaves ample slack for a
+# STEP [9] late daily.yml AND for an afternoon tap (Harvey taps mornings/afternoons
+# STEP [9] IST) to still be approvable when an afternoon poll reads it.
 # STEP [9] NEVER raise above 24: Telegram discards unconfirmed updates at 24h,
 # STEP [9] so beyond that we would be waiting on a tap that can no longer arrive.
-APPROVAL_EXPIRY_H = 7
+# STEP [13] Was 7: the old poll window ended 08:53 UTC (14:23 IST), so any tap
+# STEP [13] after 14:23 IST was never polled before the draft expired/superseded
+# STEP [13] the next morning — Harvey's afternoon taps silently dropped every day.
+APPROVAL_EXPIRY_H = 14
 TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offset depth
 
 # ---------------------------------------------------------------------------

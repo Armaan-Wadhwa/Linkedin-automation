@@ -2,9 +2,12 @@
 # on a winning ✅, posts the approved draft to LinkedIn in the same run).   # STEP [10]
 #
 # Notes:
-# - Polls every 30 min for ~6h so a tap is not lost if Harvey is away from his
-#   phone when the draft lands. config.APPROVAL_EXPIRY_H sits just past the
+# - Polls every 30 min for ~8h so a tap is not lost if Harvey is away from his
+#   phone when the draft lands. config.APPROVAL_EXPIRY_H sits well past the
 #   last poll, so an untapped draft expires instead of lingering approvable.
+# STEP [13] Window widened from 03:23-08:53 UTC to 03:23-10:53 UTC. Harvey taps
+# STEP [13] mornings/afternoons IST; the old 14:23 IST cutoff missed afternoon
+# STEP [13] taps (e.g. a 14:48 IST tap), which then expired/superseded unpolled.
 # - Same concurrency group as daily.yml: both write pending_post.json and
 #   push, so they MUST serialize (this also means daily.yml can't interrupt
 #   the atomic approve→post sequence in this run).
@@ -13,7 +16,7 @@ name: approve-digest
 
 on:
   schedule:
-    - cron: '23,53 3-8 * * *'   # every 30 min, 03:23-08:53 UTC = 08:53-14:23 IST
+    - cron: '23,53 3-10 * * *'  # every 30 min, 03:23-10:53 UTC = 08:53-16:23 IST   # STEP [13]
   workflow_dispatch: {}          # manual runs for testing
 
 permissions:
