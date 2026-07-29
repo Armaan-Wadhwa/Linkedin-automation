@@ -2,7 +2,11 @@
   "draft": "When Uber exhausts its entire annual AI budget in just four months, you know developer API costs are spiraling out of control.\n\nManaging the sheer cost of building with LLMs is becoming the primary operational challenge for engineering teams this year.\n\n🔌 Fireworks AI launched Fireworks Nexus, a routing and cost-control platform designed to redirect routine developer coding tasks over to managed open-weight models.\n\nAt the same time, we are seeing a massive push to bring real-time search capabilities directly into our terminal workflows and agentic pipelines.\n\n💻 Perplexity released pplx, a single-binary CLI for macOS arm64 and Linux that exposes its Search API directly to coding agents using the commands pplx search web and pplx content fetch.\n\n🤖 Google also updated its developer ecosystem, introducing Gemini API Managed Agents with version 3.6 Flash, hooks, and triggers.\n\nMeanwhile, the conversation around safety is shifting as the people actually building these models ask for more guardrails.\n\n⚖️ Employees from major labs including OpenAI, Anthropic, Google, and Meta have signed a joint statement asking the US government to support global coordinated governance and a potential slowdown of frontier AI development.\n\nAre you looking at open-weight models to cut down your API spend, or are you sticking with frontier models for coding tasks?\n\n#SoftwareEngineering #ArtificialIntelligence #LLM #DevOps #AI",
   "created_utc": "2026-07-29T05:40:09.266417+00:00",
   "telegram_message_id": 26,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": null,
-  "image_source": null
+  "image_source": null,
+  "decided_utc": "2026-07-29T16:39:20.895223+00:00",
+  "callback_update_id": 523661448,
+  "posted_utc": "2026-07-29T16:39:22.601949+00:00",
+  "linkedin_post_id": "urn:li:share:7488271967259734017"
 }
