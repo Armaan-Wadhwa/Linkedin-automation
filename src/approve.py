@@ -141,6 +141,24 @@ def _find_decision(updates, chat_id, message_id):
         matches.append((status, upd.get("update_id"), cq))
     log.info("scan: %d updates, %d callbacks, %d from this chat, %d matched draft",
              len(updates), seen_callbacks, matched_chat, len(matches))
+    # STEP [16] Make the two silent "no decision" failure modes LOUD. Previously
+    # STEP [16] these only logged at INFO and the run exited 0, so a wrong
+    # STEP [16] TELEGRAM_CHAT_ID secret (or a stale-button tap) looked identical
+    # STEP [16] to "Harvey hasn't tapped yet" — the bot went dead for days with
+    # STEP [16] no warning. Now both surface at WARNING so they're visible in the
+    # STEP [16] Actions log. No secret value is logged — only its length, enough
+    # STEP [16] to spot a malformed/stale value vs the real one.
+    if seen_callbacks and matched_chat == 0:                            # STEP [16]
+        log.warning("scan: %d button tap(s) seen but NONE matched the " # STEP [16]
+                    "configured TELEGRAM_CHAT_ID (len=%d) — the GitHub " # STEP [16]
+                    "secret likely differs from the tapper's chat id. "  # STEP [16]
+                    "Tap(s) came from a different chat than expected.",  # STEP [16]
+                    seen_callbacks, len(str(chat_id)))                  # STEP [16]
+    elif matched_chat and not matches:                                  # STEP [16]
+        log.warning("scan: %d tap(s) from the right chat but NONE matched" # STEP [16]
+                    " message_id=%s — Harvey may be tapping a stale/"    # STEP [16]
+                    " superseded draft's button (expected the latest).", # STEP [16]
+                    matched_chat, message_id)                           # STEP [16]
     if not matches:
         return None
     rejects = [m for m in matches if m[0] == "rejected"]
