@@ -109,9 +109,16 @@ def _normalize_image_url(url):                                      # STEP [13]
     # STEP [13] &auto=webp / &format=webp, which make them serve WebP — the sniff
     # STEP [13] rejects it and the post silently falls back to text-only. Removing
     # STEP [13] those params (the path already ends in .png/.jpg) yields real bytes.
-    # STEP [13] Best-effort: any parse failure returns the original url untouched."""
+    # STEP [13] Best-effort: any parse failure returns the original url untouched.
+    # STEP [17] FIX: skip signed URLs (those carrying &s=<sig>). Reddit's
+    # STEP [17] external-preview.redd.it computes the signature over the FULL query
+    # STEP [17] string, so stripping auto=webp invalidates it → HTTP 403. These
+    # STEP [17] URLs already return PNG/JPEG (not webp) when fetched with a real
+    # STEP [17] User-Agent, so normalization is unnecessary AND harmful for them."""
     if not url or not isinstance(url, str) or "?" not in url:
         return url
+    if "&s=" in url:                                                # STEP [17]
+        return url                                                  # STEP [17] signed URL — don't touch
     try:
         parts = urlsplit(url)
         kept = [(k, v) for k, v in parse_qsl(parts.query)

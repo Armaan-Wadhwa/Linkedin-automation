@@ -87,18 +87,22 @@ def test_send_draft_missing_env():
     post.assert_not_called()
 
 
-def _stub_run(tmp, send_result, story_image=None):
+def _stub_run(tmp, send_result, story_image=None, stories=None):
     """Run main.run() with fetch/generate/notify stubbed, real rank+history.
-    # STEP [11] story_image controls the top story's image_url (None = no image)."""
-    story = {"source_id": 1, "source_name": "Test", "priority": 6,
-             "title": "Anthropic launches test thing", "link": "http://x",
-             "summary": "some summary",
-             "published": datetime.now(timezone.utc),
-             "image_url": story_image}                               # STEP [11]
+    # STEP [11] story_image controls the top story's image_url (None = no image).
+    # STEP [17] stories overrides the single-story default (for image-fallback tests).
+    # STEP [17] Returns (rc, pending, history, draft, send_mock)."""
+    if stories is None:                                                   # STEP [17]
+        story = {"source_id": 1, "source_name": "Test", "priority": 6,
+                 "title": "Anthropic launches test thing", "link": "http://x",
+                 "summary": "some summary",
+                 "published": datetime.now(timezone.utc),
+                 "image_url": story_image}                               # STEP [11]
+        stories = [story]                                                 # STEP [17]
     draft = "Hook line under 140 chars.\n\nBody paragraph.\n\n#AI #LLM"
     hist_path = os.path.join(tmp, "history.json")
     pend_path = os.path.join(tmp, "pending_post.json")
-    with mock.patch.object(main.fetch, "fetch_all", return_value=[story]), \
+    with mock.patch.object(main.fetch, "fetch_all", return_value=stories), \
          mock.patch.object(main.generate, "generate_post", return_value=draft), \
          mock.patch.object(main.notify, "send_draft",
                            return_value=send_result) as send, \
@@ -112,12 +116,12 @@ def _stub_run(tmp, send_result, story_image=None):
         pending = json.load(fh)
     with open(hist_path, encoding="utf-8") as fh:
         history = json.load(fh)
-    return rc, pending, history, draft
+    return rc, pending, history, draft, send                              # STEP [17]
 
 
 def test_run_success_writes_awaiting_approval():
     with tempfile.TemporaryDirectory() as tmp:
-        rc, pending, history, draft = _stub_run(tmp, (True, 42))
+        rc, pending, history, draft, _ = _stub_run(tmp, (True, 42))       # STEP [17]
     assert rc == 0, rc
     assert pending["status"] == "awaiting_approval", pending
     assert pending["draft"] == draft
@@ -148,7 +152,7 @@ def test_run_early_failure_supersedes_stale_pending():
 
 def test_run_notify_failure_goes_red_but_records_history():
     with tempfile.TemporaryDirectory() as tmp:
-        rc, pending, history, _ = _stub_run(tmp, (False, None))
+        rc, pending, history, _, _ = _stub_run(tmp, (False, None))        # STEP [17]
     assert rc == 1, rc
     assert pending["status"] == "notify_failed", pending
     assert pending["telegram_message_id"] is None
@@ -156,21 +160,100 @@ def test_run_notify_failure_goes_red_but_records_history():
 
 
 # STEP [11] main.py carries the top story's image_url into pending_post.json.
+# STEP [17] Now also verifies send_draft received the image_url (3rd positional arg).
 def test_run_writes_image_url_from_top_story():
     with tempfile.TemporaryDirectory() as tmp:
-        rc, pending, _, _ = _stub_run(tmp, (True, 42),
-                                      story_image="http://example.com/a.jpg")
+        rc, pending, _, _, send = _stub_run(                              # STEP [17]
+            tmp, (True, 42), story_image="http://example.com/a.jpg")
     assert rc == 0, rc
     assert pending["image_url"] == "http://example.com/a.jpg", pending
     assert pending["image_source"] == "story", pending
+    assert send.call_args.args[2] == "http://example.com/a.jpg"           # STEP [17]
 
 
 def test_run_no_image_writes_none():
     with tempfile.TemporaryDirectory() as tmp:
-        rc, pending, _, _ = _stub_run(tmp, (True, 42), story_image=None)
+        rc, pending, _, _, send = _stub_run(tmp, (True, 42), story_image=None)  # STEP [17]
     assert rc == 0, rc
     assert pending["image_url"] is None, pending
     assert pending["image_source"] is None, pending
+    assert send.call_args.args[2] is None                                 # STEP [17]
+
+
+# STEP [17] Image fallback: when the #1 story has no image but a lower-ranked
+# STEP [17] story does, main.py picks the first available image from the top 5.
+def test_run_picks_image_from_lower_story_when_top_has_none():           # STEP [17]
+    now = datetime.now(timezone.utc)
+    stories = [
+        {"source_id": 1, "source_name": "TopNoImg", "priority": 10,
+         "title": "Top story has no image at all", "link": "http://a",
+         "summary": "", "published": now, "image_url": None},
+        {"source_id": 2, "source_name": "HasImg", "priority": 8,
+         "title": "Second story has a great image", "link": "http://b",
+         "summary": "", "published": now, "image_url": "http://example.com/b.jpg"},
+    ]
+    with tempfile.TemporaryDirectory() as tmp:
+        rc, pending, _, _, send = _stub_run(tmp, (True, 42), stories=stories)
+    assert rc == 0, rc
+    assert pending["image_url"] == "http://example.com/b.jpg", pending   # STEP [17]
+    assert pending["image_source"] == "story", pending                   # STEP [17]
+    assert send.call_args.args[2] == "http://example.com/b.jpg"          # STEP [17]
+
+
+# STEP [17] sendPhoto preview tests (no network — requests is mocked). _send_photo
+# STEP [17] downloads the image (requests.get) then uploads as multipart (requests.post),
+# STEP [17] so both must be mocked.
+def _img_response(data=b"\xff\xd8\xff fakejpeg", status=200):             # STEP [17]
+    r = mock.Mock()
+    r.status_code = status
+    r.content = data
+    return r
+
+
+def test_send_draft_with_image_sends_photo_first():                      # STEP [17]
+    photo_resp = _ok_response(41)
+    msg_resp = _ok_response(42)
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(notify.requests, "get", return_value=_img_response()) as get, \
+         mock.patch.object(notify.requests, "post",
+                           side_effect=[photo_resp, msg_resp]) as post:
+        ok, mid = notify.send_draft("draft body.", [], "http://example.com/img.jpg")
+    assert (ok, mid) == (True, 42), (ok, mid)  # returns TEXT msg id (with buttons)
+    # Image was downloaded then uploaded via sendPhoto
+    assert get.call_count == 1                                           # STEP [17]
+    assert "/sendPhoto" in post.call_args_list[0].args[0]
+    assert "photo" in post.call_args_list[0].kwargs["files"]             # STEP [17] multipart
+    # Then sendMessage with buttons — URL NOT in text (photo succeeded)
+    assert "/sendMessage" in post.call_args_list[1].args[0]
+    assert "http://example.com/img.jpg" not in post.call_args_list[1].kwargs["json"]["text"]
+
+
+def test_send_draft_photo_failure_includes_url_in_text():                # STEP [17]
+    msg_resp = _ok_response(42)
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(notify.requests, "get",
+                           return_value=_img_response(status=404, data=b"")) as get, \
+         mock.patch.object(notify.requests, "post", return_value=msg_resp) as post:
+        ok, mid = notify.send_draft("draft body.", [], "http://example.com/img.jpg")
+    assert (ok, mid) == (True, 42), (ok, mid)
+    # Download 404 → no sendPhoto POST, only sendMessage
+    assert get.call_count == 1                                           # STEP [17]
+    assert post.call_count == 1, "download failed → must skip sendPhoto POST"  # STEP [17]
+    assert "/sendMessage" in post.call_args.args[0]
+    # URL appears in text as a tappable fallback
+    assert "http://example.com/img.jpg" in post.call_args.kwargs["json"]["text"]
+
+
+def test_send_draft_no_image_skips_photo():                              # STEP [17]
+    with mock.patch.dict(os.environ, FAKE_ENV), \
+         mock.patch.object(notify.requests, "get") as get, \
+         mock.patch.object(notify.requests, "post",
+                           return_value=_ok_response(42)) as post:
+        ok, mid = notify.send_draft("draft body.", [])
+    assert (ok, mid) == (True, 42), (ok, mid)
+    assert get.call_count == 0, "no image_url → must not download anything"  # STEP [17]
+    assert post.call_count == 1, "no image_url → must not call sendPhoto"
+    assert "/sendMessage" in post.call_args.args[0]
 
 
 if __name__ == "__main__":

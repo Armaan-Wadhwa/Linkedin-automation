@@ -103,7 +103,23 @@ def run():
         log.warning("run: history not saved — tomorrow may repeat today's stories")
 
     warnings = generate.validate_post(post)                          # STEP [8]
-    ok, message_id = notify.send_draft(post, warnings)               # STEP [8]
+
+    # STEP [17] Pick the first usable image across the top stories (not just
+    # STEP [17] #1). The lead is frequently a text-only Reddit post with no
+    # STEP [17] image, which left every post image-less even when stories #2-5
+    # STEP [17] had perfectly good images. The digest is a multi-story roundup,
+    # STEP [17] so any top-story image is an appropriate visual.
+    image_url = None                                                 # STEP [17]
+    for s in top:                                                    # STEP [17]
+        if s.get("image_url"):                                       # STEP [17]
+            image_url = s["image_url"]                               # STEP [17]
+            log.info("run: image from [%s] %s", s["source_name"],    # STEP [17]
+                     image_url[:70])                                 # STEP [17]
+            break                                                    # STEP [17]
+    if not image_url:                                                # STEP [17]
+        log.info("run: no image in any top story — post will be text-only")  # STEP [17]
+
+    ok, message_id = notify.send_draft(post, warnings, image_url)   # STEP [8] # STEP [17]
 
     # STEP [8] Single write AFTER the send attempt: a crash mid-send leaves
     # STEP [8] the "superseded" file from the top of run(), never a stale
@@ -113,8 +129,8 @@ def run():
         "created_utc": datetime.now(timezone.utc).isoformat(),       # STEP [8]
         "telegram_message_id": message_id,                           # STEP [8]
         "status": "awaiting_approval" if ok else "notify_failed",    # STEP [8]
-        "image_url": (top[0].get("image_url") if top else None),     # STEP [11]
-        "image_source": "story" if (top and top[0].get("image_url")) else None,  # STEP [11]
+        "image_url": image_url,                                      # STEP [11] # STEP [17]
+        "image_source": "story" if image_url else None,              # STEP [11] # STEP [17]
     }                                                                # STEP [8]
     try:                                                             # STEP [8]
         with open(PENDING_POST_PATH, "w", encoding="utf-8") as fh:   # STEP [8]
