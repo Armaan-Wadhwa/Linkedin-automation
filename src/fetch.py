@@ -212,6 +212,25 @@ def fetch_all():
     all_stories = []
     for source_id, name, url, priority in config.SOURCES:
         all_stories.extend(fetch_source(source_id, name, url, priority))
+
+    # STEP [14] Gmail newsletters — ADDITIVE and ALWAYS non-fatal. Its own
+    # STEP [14] try/except so a Gmail failure (login, label, parse, anything) can
+    # STEP [14] NEVER affect the RSS stories already gathered in all_stories.
+    # STEP [14] Gated on GMAIL_ADDRESS env: contributors / local runs without
+    # STEP [14] Gmail configured skip it cleanly (no secrets, no IMAP attempt).
+    if os.environ.get(config.GMAIL_ADDRESS_ENV):                       # STEP [14]
+        try:                                                          # STEP [14]
+            import gmail_fetch                                        # STEP [14] lazy: keeps IMAP stack out of import path
+            before = len(all_stories)                                 # STEP [14]
+            all_stories.extend(gmail_fetch.fetch_newsletter_stories())# STEP [14]
+            log.info("fetch_all: +%d stories from Gmail newsletters", # STEP [14]
+                     len(all_stories) - before)                       # STEP [14]
+        except Exception as exc:  # noqa: BLE001                      # STEP [14]
+            log.warning("fetch_all: Gmail newsletters failed (%s: %s) — skipped",
+                        type(exc).__name__, exc)                      # STEP [14]
+    else:                                                             # STEP [14]
+        log.debug("fetch_all: GMAIL_ADDRESS unset — skipping newsletters")  # STEP [14]
+
     log.info("fetch_all: %d stories from %d sources", len(all_stories), len(config.SOURCES))
     return all_stories
 

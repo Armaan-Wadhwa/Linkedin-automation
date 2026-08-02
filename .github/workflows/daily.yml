@@ -47,6 +47,8 @@ jobs:
           REDDIT_FEED_PARAMS: ${{ secrets.REDDIT_FEED_PARAMS }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}   # STEP [8]
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}       # STEP [8]
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}             # STEP [14]
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}   # STEP [14]
         run: python src/main.py
 
       - name: Append run log (keeps repo active)

@@ -8,7 +8,10 @@ from environment variables (GitHub Actions secrets or a local .env).
 Source list finalized in Phase 0 (verified 2026-07-16/17):
 - 20 automated RSS/Atom sources (X/Instagram excluded: paid API / ToS risk;
   covered via Meta AI, Ollama, xAI feeds + existing sources).
-- Gmail newsletters (#18) are Phase 3 and intentionally absent here.
+- Gmail newsletters are a Phase 3 source (Task 9, STEP [14]) wired through
+  src/gmail_fetch.py as source_id 18 — NOT an RSS tuple, so absent from SOURCES.
+  Shared id 18 means MAX_PER_SOURCE_IN_TOP caps the whole newsletter layer at 2
+  in the digest (intended: newsletters are a priority-3 supplement, not the lead).
 """
 
 import os
@@ -183,3 +186,32 @@ LINKEDIN_DRY_RUN_ENV = "LINKEDIN_DRY_RUN"              # STEP [10] =1 → fake s
 IMAGE_MAX_BYTES = 5_242_880        # STEP [11] 5 MB LinkedIn image upload cap
 IMAGE_ALLOWED_TYPES = ("image/jpeg", "image/png")  # STEP [11] LinkedIn-accepted
 IMAGE_TEMP_PREFIX = "digest_photo_"  # STEP [11] tempfile prefix for TG photos
+
+# ---------------------------------------------------------------------------
+# Gmail newsletters (Phase 3, Task 9)                              # STEP [14]
+# ---------------------------------------------------------------------------
+# STEP [14] Newsletters selected by GMAIL LABEL only (not sender lists), last
+# STEP [14] GMAIL_LOOKBACK_H hours. Each qualifying link in a newsletter becomes
+# STEP [14] one candidate Story (title=anchor text, link=URL, summary="",
+# STEP [14] published=email Date, source_name="Newsletter: <sender>").
+# STEP [14] ADDITIVE + ALWAYS non-fatal: any IMAP/parse failure -> WARNING + [],
+# STEP [14] the pipeline still ships today's normal RSS post. Stdlib only
+# STEP [14] (imaplib + email + html.parser) — no new deps.
+# STEP [14] env-var NAMES only here; values live in GitHub secrets / .env.
+GMAIL_ADDRESS_ENV = "GMAIL_ADDRESS"            # STEP [14] secret: env var NAME only
+GMAIL_APP_PASSWORD_ENV = "GMAIL_APP_PASSWORD"  # STEP [14] secret: env var NAME only (16-char app code)
+GMAIL_LABEL = "AI-Newsletter"                  # STEP [15] FIX: match Harvey's actual Gmail label (singular). Was "AI-Newsletters" → count=0 every run.
+GMAIL_LOOKBACK_H = 26                          # STEP [14] ~daily cadence w/ slack
+GMAIL_MAX_LINKS_PER_EMAIL = 8                  # STEP [14] cap, applied in document order
+NEWSLETTER_SOURCE_ID = 18                      # STEP [14] reserved id (see comment line 11)
+NEWSLETTER_PRIORITY = 3                        # STEP [14] same tier as media/aggregators
+NEWSLETTER_MIN_ANCHOR_CHARS = 15               # STEP [14] drop links w/ too-short anchor text
+# STEP [14] boilerplate anchors dropped (case-insensitive substring match on the
+# STEP [14] anchor text): footers, social icons, ad slots. Bare social-platform
+# STEP [14] names can over-match a rare headline about that platform — accepted.
+NEWSLETTER_BOILERPLATE = (
+    "unsubscribe", "view in browser", "view online", "privacy", "preferences",
+    "sponsor", "sponsored", "advertise", "advertising", "mailto:",
+    "twitter", "x.com", "linkedin", "facebook", "instagram", "youtube",
+    "tiktok", "forward to a friend", "update your profile", "manage preferences",
+)
