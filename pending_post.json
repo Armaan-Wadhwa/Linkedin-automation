@@ -1,8 +1,3 @@
 {
-  "draft": "Is the tooling ecosystem moving faster than frontier AI labs can scale their API billing and account infrastructure?\n\nAs developers, we are seeing rapid advancements in agentic tools, but also some highly frustrating operational friction from the major providers.\n\nHere is the breakdown of today's key developments.\n\n🇨🇳 Alibaba has released Qwen3.8-Max, its largest and most capable AI model to date, claiming performance that rivals top-tier Western systems from Anthropic and OpenAI, as well as domestic competitors like Moonshot AI's Kimi K3.\n\n🛠️ YC P26 startup Armature, founded by Theodore and Louis, launched a 3-line SDK in TypeScript, Python, and Go to help developers reconstruct entire MCP agent sessions, user prompts, and tool calls directly in a dashboard.\n\n⚠️ Anthropic developers are reporting critical platform bugs, including API accounts getting permanently blocked from making payments after automated suspensions are reversed, and unexplained credit balance drops from $3.01 to -$0.01.\n\nThese infrastructure bottlenecks are becoming a major talking point. While we are getting incredibly capable new models and sophisticated debugging tools for MCP, basic account management and API billing stability are still causing headaches for active developers.\n\nIf you are building long-term projects, these platform instabilities can stall production workflows.\n\nHave you run into any unexpected billing blocks or balance issues while building with the Claude API?\n\n#AI #LLM #MCP #Alibaba #Anthropic",
-  "created_utc": "2026-08-03T20:54:10.235128+00:00",
-  "telegram_message_id": 51,
-  "status": "awaiting_approval",
-  "image_url": null,
-  "image_source": null
+  "status": "superseded"
 }
