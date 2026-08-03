@@ -1,17 +1,6 @@
 {
-  "generated_utc": "2026-08-03T20:51:25.724134+00:00",
+  "generated_utc": "2026-08-03T20:56:53.698421+00:00",
   "candidates": [
-    {
-      "candidate_id": "2fc54448570457887d4d94fe69b4b368ab731fa696de8a283aa3f248ed98f073",
-      "source_id": 14,
-      "source_name": "The Verge AI",
-      "priority": 3,
-      "title": "China&#8217;s Alibaba takes another swipe at America’s AI supremacy",
-      "link": "https://www.theverge.com/ai-artificial-intelligence/974342/alibaba-qwen-max-open-weight-ai",
-      "summary": "Chinese tech giant Alibaba released what it says is its largest and \"most capable AI model to date,\" claiming performance rivaling the best systems from US frontier labs Anthropic and OpenAI, as well as domestic rivals like Moonshot AI's Kimi K3. Alibaba said it was making the model, Qwen3.8-Max, widely available to users in a [&#8230;]",
-      "published": "2026-08-03T11:01:11+00:00",
-      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/08/gettyimages-2266883826.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
-    },
     {
       "candidate_id": "adeb41b62ff44c468ff89f2adbe1a9547a033b9393bb993d26bcd41cf8aa6213",
       "source_id": 1,
@@ -24,58 +13,14 @@
       "image_url": null
     },
     {
-      "candidate_id": "89677b702a9efce0e9c13c8d54772313ab71870891b87f81802889d33834be9f",
-      "source_id": 17,
-      "source_name": "HN frontpage",
-      "priority": 3,
-      "title": "Show HN: Product analytics (and evals) for agent sessions on your MCP",
-      "link": "https://armature.tech/",
-      "summary": "Hi HN! We’re Theodore and Louis, founders of Armature (YC P26). We reconstruct the entire session behind the MCP tool calls you receive, including what the user asked their agent to do and what the agent thought. You wrap your MCP in 3 lines of code (our SDK is available in Typescript, Python and Go) and start seeing in your dashboard: - All sessions reconstructed: it’s like reading the real conversation the user had inside Claude or ChatGPT! - A ranking of your MCP most popular use cases, built",
-      "published": "2026-08-03T16:17:59+00:00",
-      "image_url": null
-    },
-    {
       "candidate_id": "f281a355503224dd002204b30cbe38f617584d77e4e0ee4c7517145202a62f01",
       "source_id": 9,
       "source_name": "r/Anthropic",
       "priority": 2,
       "title": "I've let Opus 5 redo Opus 4.8's work from 1 month ago. And it failed over and over and over again while using all of my 20x tokens...",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vepg4i/ive_let_opus_5_redo_opus_48s_work_from_1_month/",
-      "summary": "Mini backstory. I have a app running with 4 tools. Each of the 4 tools minus the UI is almost identical minus a few edge cases but nothing massive. Each app could only run one job at the same time I wanted to change that to parallel jobs so it runs faster for our users. To change the first first app to accept parallel jobs I used opus 4.8. It took Opus 4.8 with a bit of handholding about 4 hours to do it. No major problems, after the job I've let Fable 5 audit it's work and it found 2 small issu",
+      "summary": "Mini backstory. I have a app running with 4 tools. Each of the 4 tools is almost identical minus a few edge cases but nothing massive. Each app could only run one job at the same time I wanted to change that to parallel jobs so it runs faster for our users. To change the first first app to accept parallel jobs I used opus 4.8. It took Opus 4.8 with a bit of handholding about 4 hours to do it. No major problems, after the job I've let Fable 5 audit it's work and it found 2 small issues. Now comes",
       "published": "2026-08-03T20:46:07+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "04d6d7781ffe4229bfb2e9cc33039dd12c54ed89bc44e3abe16f1de00f0ebd3a",
-      "source_id": 9,
-      "source_name": "r/Anthropic",
-      "priority": 2,
-      "title": "PSA: if your suspension gets reversed, your payments may stay blocked — and the appeal form only works while you're still suspended. Failure from Support.",
-      "link": "https://www.reddit.com/r/Anthropic/comments/1vej190/psa_if_your_suspension_gets_reversed_your/",
-      "summary": "Max 20x subscriber here, plus an API org on Console. Posting this because I think two of these are real bugs, not just me having a bad time, and I want to know if anyone else has hit them. The underlying problem In February my account was suspended for &quot;suspicious signals&quot; while I was using Claude Code normally. I appealed. Safeguards reversed it and reinstated me — explicitly saying it was a mistake. Twelve hours after reinstatement, my payments started failing. They have failed conti",
-      "published": "2026-08-03T16:53:45+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "3072fa5faf7bd02e03615a40632d9ccf479d187244461ad6947dd599a4e1cda6",
-      "source_id": 9,
-      "source_name": "r/Anthropic",
-      "priority": 2,
-      "title": "What are people building?",
-      "link": "https://www.reddit.com/r/Anthropic/comments/1vej0mq/what_are_people_building/",
-      "summary": "Every now and then, I see people complaining about Claude breaking when making long-term projects or being hyped about a new, cheaper model for more output. But these are my people—everyday laymen that are technologically inclined—not super tech savvy people in silicon valley (qualified with a few inevitable exceptions). So, what the hell are ya’ll building? What’s straining the Anthropic data centers and making them remove Fable 5 for pro users because there’s too many people doing long-term pr",
-      "published": "2026-08-03T16:53:09+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "8c66b86907c383c2e18e3b1483e94f2225a27b3a7beacd65a3b5ade0ffac39c9",
-      "source_id": 9,
-      "source_name": "r/Anthropic",
-      "priority": 2,
-      "title": "Claude usage credit decreased when not using it",
-      "link": "https://www.reddit.com/r/Anthropic/comments/1veiqqt/claude_usage_credit_decreased_when_not_using_it/",
-      "summary": "I wanted to see if anyone else has run into this. I put $50 of usage credit into my Claude account to finish a task after maxing out my 20x plan. After I finished I had $3.01 left (it was at $3.01 since Friday). I didn’t use Claude at all after that. I checked again this morning, and now my balance is -$0.01. As far as I know, there weren’t any requests running in the background, and I definitely didn’t submit any new prompts during that time. Has anyone else had credit decrease while not using ",
-      "published": "2026-08-03T16:43:30+00:00",
       "image_url": null
     },
     {
@@ -151,7 +96,7 @@
       "priority": 3,
       "title": "MiniMax H3 Day-0 Support in ComfyUI: Open Weights, Native Audio, and 2K Video",
       "link": "https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui",
-      "summary": "Article URL: https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui Comments URL: https://news.ycombinator.com/item?id=49155629 Points: 209 # Comments: 62",
+      "summary": "Article URL: https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui Comments URL: https://news.ycombinator.com/item?id=49155629 Points: 214 # Comments: 64",
       "published": "2026-08-03T13:34:43+00:00",
       "image_url": null
     },
@@ -239,7 +184,7 @@
       "priority": 3,
       "title": "SQLite Critical CVEs or LLM Slop?",
       "link": "https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/",
-      "summary": "Article URL: https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/ Comments URL: https://news.ycombinator.com/item?id=49154332 Points: 678 # Comments: 323",
+      "summary": "Article URL: https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/ Comments URL: https://news.ycombinator.com/item?id=49154332 Points: 678 # Comments: 329",
       "published": "2026-08-03T11:28:54+00:00",
       "image_url": null
     },
@@ -250,8 +195,19 @@
       "priority": 3,
       "title": "AirLLM 70B inference with single 4GB GPU",
       "link": "https://github.com/lyogavin/airllm",
-      "summary": "Article URL: https://github.com/lyogavin/airllm Comments URL: https://news.ycombinator.com/item?id=49154228 Points: 160 # Comments: 61",
+      "summary": "Article URL: https://github.com/lyogavin/airllm Comments URL: https://news.ycombinator.com/item?id=49154228 Points: 162 # Comments: 61",
       "published": "2026-08-03T11:15:48+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "9a7bf4a1c26ccd004f71cd7eca97489012ed6fdae8de9053145d33c36155010f",
+      "source_id": 17,
+      "source_name": "HN frontpage",
+      "priority": 3,
+      "title": "Show HN: Nightcrawler – A local AI pentesting agent running on a smartphone",
+      "link": "https://github.com/garagehq/nightcrawler/",
+      "summary": "Article URL: https://github.com/garagehq/nightcrawler/ Comments URL: https://news.ycombinator.com/item?id=49154127 Points: 93 # Comments: 29",
+      "published": "2026-08-03T11:06:15+00:00",
       "image_url": null
     },
     {
@@ -272,7 +228,7 @@
       "priority": 3,
       "title": "Prevent cognitive debt by manually retyping LLM-generated code",
       "link": "https://ankursethi.com/blog/prevent-cognitive-debt-by-manually-retyping-llm-generated-code/",
-      "summary": "Article URL: https://ankursethi.com/blog/prevent-cognitive-debt-by-manually-retyping-llm-generated-code/ Comments URL: https://news.ycombinator.com/item?id=49153374 Points: 328 # Comments: 272",
+      "summary": "Article URL: https://ankursethi.com/blog/prevent-cognitive-debt-by-manually-retyping-llm-generated-code/ Comments URL: https://news.ycombinator.com/item?id=49153374 Points: 330 # Comments: 277",
       "published": "2026-08-03T09:32:07+00:00",
       "image_url": null
     },
