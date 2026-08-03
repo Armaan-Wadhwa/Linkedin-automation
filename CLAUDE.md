@@ -30,12 +30,12 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 8).
+  comments (continue the numbering already in the files; next free number: 20).
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
-  stdlib (`imaplib`, `email`, `hashlib`, `json`). Justify any new dependency
-  to Harvey before adding it.
+  `youtube-transcript-api`, stdlib (`imaplib`, `email`, `hashlib`, `json`).
+  Justify any new dependency to Harvey before adding it.
 - Always state which Phase/Task you are working on at the start of a session.
 
 ## Repo layout & module contracts
@@ -45,7 +45,9 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   `{source_id, source_name, priority, title, link, summary, published}`.
   Per-source fault isolation; Reddit throttle (6s) + `REDDIT_FEED_PARAMS`
   env token (never logged); feeds sorted newest-first; 30/source cap;
-  HN AI-keyword filter (excludes "Launch HN"/"Ask HN").
+  HN AI-keyword filter (excludes "Launch HN"/"Ask HN"); YouTube transcript
+  enrichment pass for source_id 12 only (STEP 16, own try/except, capped at
+  `YT_MAX_ENRICH`, skipped cleanly if the library isn't installed).
 - `src/rank.py` — `dedupe_and_rank(stories, history)` → top 5.
   Normalized-title SHA-256 dedupe (cross-source + against history.json);
   score = recency (12→0 over 48h) + source priority (2–10) + topic tier
@@ -62,11 +64,75 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - `src/main.py` — orchestrator; resolves `history.json` at repo root from its
   own path (CWD-independent); exit 0 = draft OK, exit 1 = failure (red run =
   alerting).
+- `src/youtube_enrich.py` — `enrich(story) -> story` (STEP 16): pulls the
+  YouTube transcript for source_id 12 stories and writes it into `summary` so
+  generate.py's bullet is grounded in real content, not a clickbait title.
+  NEVER raises; missing captions / rate limit / library absent → story kept
+  title-only (INFO log, not WARNING). Manual transcripts preferred over auto,
+  English first. Version-tolerant across youtube-transcript-api 0.6.x / 1.x
+  API shapes (probe both). Handles `watch?v=`, `youtu.be/`, and `/shorts/` URLs.
+- `src/select_build.py` — `build_from_selection(selection) -> int` (STEP 19,
+  Phase 4 Task 12 part A): manual-selection entry path. The future dashboard
+  (Task 13) sends `{story_ids, image_url, custom_story}`; this rebuilds the
+  SAME candidate universe via `fetch_all()` + `rank.dedupe_only()`, resolves
+  `story_ids` by `candidate_id` (= `rank.title_hash`), appends the optional
+  custom story (sentinel `source_id=0`, `"manual"`, priority 10; bypasses
+  dedupe because it's appended AFTER), caps at 5, then calls the EXISTING
+  `generate.generate_post` + `notify.send_draft` + writes `pending_post.json`
+  in the EXACT same shape `main.run()` does. Reuses `main.supersede_pending()`
+  verbatim — invariant holds by code reuse, not by reimplementation.
+  DIVERGENCE from `main.run()` (intentional, STEP 19): records history AFTER
+  a successful `send_draft` (the auto path records before; the manual path
+  won't burn hand-picked stories on a Telegram outage). Never raises.
+- `src/emit_candidates.py` — `emit() -> int` (STEP 19): standalone refresh
+  entry that writes `docs/candidates.json` (the GitHub Pages source the Task 13
+  dashboard reads). Fetch + `rank.dedupe_only()` (full ranked+deduped list,
+  NOT the top-5 `dedupe_and_rank`), serialize each as
+  `{candidate_id, source_id, source_name, priority, title, link, summary,
+  published, image_url}`. `candidate_id` = `rank.title_hash` verbatim — the
+  single contract that makes selection work (emit → pick → build round-trip).
+  Capped at 40 candidates. ALWAYS non-fatal: any failure writes
+  `{generated_utc, candidates: [], error}` so the dashboard degrades
+  gracefully. No secrets in the file.
+- `src/main.py` — orchestrator; resolves `history.json` at repo root from its
+  own path (CWD-independent); exit 0 = draft OK, exit 1 = failure (red run =
+  alerting). STEP 19 adds `supersede_pending(pending_path=None) -> int`
+  (extracted from `run()` so both the auto path and the manual selection path
+  reuse the SAME terminal-state guard) and an `argparse` entry
+  `--from-selection <path>` that delegates to `select_build.build_from_selection`
+  (lazy import keeps the auto path import-light). Default (no args) is the
+  unchanged auto-ranked flow.
 - `.github/workflows/daily.yml` — cron `53 2 * * *` (08:23 IST, odd minute,
   ~35 min buffer before 9:00 target) + `workflow_dispatch`; commits
   `history.json` + `runs.log` every run (`if: always()`) so the repo never
   hits the 60-day inactivity auto-disable; failed generation still logs, then
   re-fails the run.
+- `.github/workflows/refresh_candidates.yml` — STEP 19, `workflow_dispatch`
+  only (no cron — Harvey triggers from the dashboard when he wants a fresh
+  menu). Runs `python src/emit_candidates.py`, commits `docs/candidates.json`
+  + `runs.log` `if: always()`. Shares `concurrency.group: daily-digest` with
+  `daily.yml` + `approve.yml` + `generate_from_selection.yml` so it can never
+  race a git push.
+- `.github/workflows/generate_from_selection.yml` — STEP 19,
+  `workflow_dispatch` with a single string input `selection` (JSON). Writes
+  the input to a tmpfile, runs `python src/main.py --from-selection <tmp>`.
+  Commits `history.json` + `pending_post.json` + `runs.log` `if: always()`.
+  Does NOT post to LinkedIn (approve.yml's job, untouched). Same concurrency
+  group as the other three workflows.
+- `docs/index.html` — STEP 20, Phase 4 Task 13: the static GitHub Pages
+  dashboard (frontend for the Task 12 backend). Single file, vanilla HTML +
+  inline `<style>` + inline `<script>`, zero runtime dependencies, zero CDN
+  calls. Reads `./candidates.json` (same-origin, no token needed). Fires
+  `refresh_candidates.yml` + `generate_from_selection.yml` via the Actions
+  dispatch API. Owner/repo/branch/PAT stored in browser `localStorage` ONLY
+  (PAT masked via `type="password"`, sent ONLY in `Authorization: Bearer`
+  header to api.github.com, never logged / never in URL / never in DOM text).
+  Selection JSON matches `select_build.build_from_selection` exactly:
+  `{story_ids: [candidate_id hex strings in chosen order],
+  image_url: str|null, custom_story: {title,link,summary|null}|null}`.
+  Dashboard's last action is firing the generate workflow — final approval
+  stays in Telegram (unchanged). Design: Newsroom Terminal (dark), signature
+  element = numbered selection badges (glowing green chips with mono digits).
 
 ## Verified facts (from live testing — don't "fix" these)
 - Gemini free-tier model that works: **`gemini-3.5-flash`**. 503s under load
@@ -81,6 +147,19 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   are NOT reliably sorted — never trust `entries[0]`, use max-date (done).
 - X/Twitter and Instagram ingestion: rejected (paid API / ToS risk). Covered
   via Meta AI / Ollama / xAI RSS feeds + existing sources. Don't re-suggest.
+- youtube-transcript-api (Vaibhav transcripts, source 12): no API key needed.
+  **1.x renamed `list_transcripts`→`list` and made it an INSTANCE method** —
+  `_fetch_transcript_text` probes both shapes so the loose `>=0.6.2` pin works.
+  Shorts use `/shorts/ID` URLs (not just `watch?v=`); ~half of Vaibhav's feed
+  is Shorts. Transcripts often missing/disabled — non-fatal by design (INFO
+  log, title-only fallback). Manual transcripts preferred over auto, English
+  first.
+- **`candidate_id` contract (STEP 19):** `emit_candidates.py` writes
+  `candidate_id = rank.title_hash(title)` (sha256 of normalized title) into
+  `docs/candidates.json`. `select_build.py` resolves `selection.story_ids`
+  against the SAME hash via `rank.dedupe_only()`. The round-trip works ONLY
+  because both sides import `rank.title_hash` — never reimplement, never
+  invent a second normalization, never change one without the other.
 
 ## LinkedIn post rules (already in the generation prompt — keep them there)
 1300–1900 chars plain text; hook <140 chars first line (never "here's my
@@ -103,9 +182,26 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   Posts API. Tasks: (5) `notify.py` draft→Telegram with Approve/Reject
   buttons + pending-post state file; (6) poller run that reads the decision;
   (7) LinkedIn OAuth walkthrough + `post_linkedin.py`; wire into workflows.
-- Phase 3 — Gmail newsletters (IMAP), YouTube transcripts, fork tim-hilde feed
+- Phase 3 — ✅ Gmail newsletters (IMAP, STEP 14); ✅ YouTube transcripts
+  (Vaibhav source 12, STEP 16); fork tim-hilde feed (pending)
 - Phase 4 — hardening: retries audit, token-age alerts, prompt tuning
-  (watch: filler intro lines, paragraph spacing in drafts)
+  (watch: filler intro lines, paragraph spacing in drafts). **STEP 19 done:
+  web-selection BACKEND seam** (`select_build.py`, `emit_candidates.py`,
+  `--from-selection` entry, two `workflow_dispatch` workflows). **STEP 20
+  done: web-selection FRONTEND** (`docs/index.html` static dashboard). All
+  four pieces wired together; the dashboard fires the workflows via the
+  Actions dispatch API, final approval stays in Telegram.
+
+## Harvey-side setup (do once, manually)
+- **Enable GitHub Pages on `/docs`:** repo Settings → Pages → Source =
+  "Deploy from a branch" → Branch = `main` / `/docs` folder. Dashboard then
+  lives at `https://<owner>.github.io/<repo>/`.
+- **Create a fine-grained PAT for the dashboard:** github.com → Settings →
+  Developer settings → Personal access tokens (fine-grained) → generate,
+  scoped to THIS repo only, with just `Actions: write` + `Contents: read`.
+  Paste it into the dashboard's Settings strip; it lives only in the
+  browser's localStorage on that device. Never commit, never reuse a
+  classic/broad token.
 
 ## Testing conventions
 - Local: run modules directly (`python src/main.py` from root, or from `src/`

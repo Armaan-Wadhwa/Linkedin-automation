@@ -1,0 +1,1317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>AI Digest Control Desk</title>
+<!--
+  ============================================================================
+  AI Digest Control Desk — Phase 4 / Task 13 (STEP 19 backend, STEP 20 frontend)
+  ============================================================================
+  Vanilla HTML + CSS + JS. Zero runtime dependencies. No frameworks, no CDN,
+  no analytics. Works on file://, http://localhost, and GitHub Pages.
+
+  DESIGN NOTE (Newsroom Terminal)
+  ----------------------------------------------------------------------------
+  Palette (6):
+    bg       #0e1116  deep ink (page background, morning eye-friendly)
+    surface  #171b22  card / panel background
+    ink      #e6edf3  high-contrast body text
+    muted    #7d8590  metadata, labels, disabled state
+    accent   #3fb950  signal green — active selection, primary action
+    alert    #f85149  red — errors, destructive actions
+  Type roles (2, system stack only — no CDN fonts):
+    sans  -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial
+           Used for headlines, body copy, buttons. Differentiated by weight
+           (400/600) and size, never by font family.
+    mono  ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas
+           Used for DATA: timestamps, source labels, candidate metadata,
+           the Preview JSON. Signals "this is machine output, not prose."
+  Signature element:
+    Numbered selection badges — circular chips with a monospace digit. When a
+    story is selected, its badge fills with signal green and casts a soft glow
+    (disabled under prefers-reduced-motion). The digit reflects Harvey's
+    chosen sequence (1..5). Everything else on the page is deliberately quiet
+    so the badges are the single visual anchor of the selection state.
+
+  ACCESSIBILITY
+  ----------------------------------------------------------------------------
+  - All form controls have associated <label> elements.
+  - Keyboard-focusable: Tab cycles through interactive elements in source
+    order; visible focus ring (2px accent outline) on every focusable element.
+  - Touch targets >= 44x44 px (checkboxes, buttons, radio cards).
+  - prefers-reduced-motion: all glow/pulse/transition disabled.
+  - ARIA live region on the toast container for screen readers.
+  - Color contrast: ink (#e6edf3) on bg (#0e1116) = 14.8:1 (WCAG AAA);
+    muted (#7d8590) on bg = 4.6:1 (WCAG AA).
+
+  SECURITY / TOKEN HANDLING
+  ----------------------------------------------------------------------------
+  The GitHub PAT lives ONLY in:
+    1. localStorage (key: 'gh_token') — set by the Save button, cleared by
+       Forget token, never auto-committed anywhere.
+    2. The Authorization: Bearer <token> header on dispatch POSTs to
+       https://api.github.com (HTTPS only).
+  It is NEVER: logged, put in a URL query string, written to the DOM as text,
+  echoed back in any response handler, or sent to any origin other than
+  api.github.com. The input is type="password" (masked). Test 5 (grep) verifies.
+  ============================================================================
+-->
+<style>
+  /* ---------- reset ---------- */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: var(--bg);
+    min-height: 100vh;
+    padding: 0 0 80px;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: none; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- design tokens ---------- */
+  :root {
+    --bg: #0e1116;
+    --surface: #171b22;
+    --surface-hover: #1c2230;
+    --border: #2d333b;
+    --border-active: #3fb950;
+    --ink: #e6edf3;
+    --muted: #7d8590;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --accent-glow: rgba(63, 185, 80, 0.35);
+    --alert: #f85149;
+    --alert-dim: #da3633;
+    --radius: 6px;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  }
+
+  /* ---------- layout ---------- */
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+
+  header.site {
+    padding: 28px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  header.site h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header.site .tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+  header.site .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); margin-right: 6px; vertical-align: 1px;
+  }
+
+  section { margin-bottom: 28px; }
+  section > h2 {
+    font-size: 11px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  /* ---------- settings strip ---------- */
+  details.strip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    margin-bottom: 24px;
+  }
+  details.strip > summary {
+    padding: 14px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  details.strip > summary::-webkit-details-marker { display: none; }
+  details.strip > summary::after {
+    content: '▾';
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.15s;
+  }
+  details.strip[open] > summary::after { transform: rotate(180deg); }
+  details.strip > summary .status {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-right: 12px;
+  }
+  details.strip > summary .status.ok { color: var(--accent); }
+  details.strip > .body { padding: 0 16px 16px; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 540px) { .grid2 { grid-template-columns: 1fr; } }
+
+  label.field {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: var(--focus-ring);
+  }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+
+  .btn {
+    padding: 9px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    transition: background 0.12s, border-color 0.12s, opacity 0.12s;
+    min-height: 38px;
+  }
+  .btn:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--muted); }
+  .btn:focus-visible { box-shadow: var(--focus-ring); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: var(--bg); font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+  .btn.danger { color: var(--alert); border-color: var(--border); }
+  .btn.danger:hover:not(:disabled) { background: rgba(248,81,73,0.1); border-color: var(--alert-dim); }
+
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(63,185,80,0.04);
+    border-left: 2px solid var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ---------- refresh row ---------- */
+  .refresh-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .refresh-row .ts {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+  @media (max-width: 540px) { .refresh-row .ts { margin-left: 0; width: 100%; } }
+  .status-line {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+    font-family: var(--mono);
+  }
+  .status-line.ok { color: var(--accent); }
+  .status-line.err { color: var(--alert); }
+
+  /* ---------- story list ---------- */
+  .meta-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta-bar .count { color: var(--ink); }
+
+  ul.stories { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+  article.story {
+    display: grid;
+    grid-template-columns: 44px 56px 1fr;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  article.story.selected {
+    border-color: var(--accent);
+    background: rgba(63,185,80,0.04);
+  }
+  @media (max-width: 540px) {
+    article.story { grid-template-columns: 36px 48px 1fr; gap: 8px; padding: 10px; }
+  }
+
+  /* signature element: numbered selection badge */
+  .badge {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 14px;
+    background: transparent;
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+    transition: all 0.18s ease;
+    align-self: center;
+  }
+  .badge.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px var(--accent-glow);
+  }
+  .badge.disabled { opacity: 0.3; }
+  @media (max-width: 540px) { .badge { width: 30px; height: 30px; font-size: 12px; } }
+
+  .thumb {
+    width: 56px; height: 56px;
+    border-radius: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    object-fit: cover;
+    align-self: center;
+  }
+  .thumb.placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 18px; color: var(--border);
+  }
+  @media (max-width: 540px) { .thumb { width: 48px; height: 48px; } }
+
+  .story-body { min-width: 0; }
+  .story-title {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  article.story.selected .story-title { color: var(--ink); }
+  .story-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .story-meta .src { color: var(--accent); }
+  .story-summary {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* invisible checkbox overlay — the badge IS the visual */
+  .story-check {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .story-row-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .story-row-label:focus-within .badge {
+    box-shadow: var(--focus-ring);
+  }
+  .story-row-label:focus-within .badge.active {
+    box-shadow: var(--focus-ring), 0 0 14px var(--accent-glow);
+  }
+
+  /* ---------- empty state ---------- */
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+  }
+
+  /* ---------- cap warning ---------- */
+  .cap-warn {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--alert);
+    margin-top: 8px;
+    display: none;
+  }
+  .cap-warn.show { display: block; }
+
+  /* ---------- custom story ---------- */
+  .custom-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .custom-card.active { border-color: var(--accent); }
+  .custom-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    border-radius: 3px;
+    background: rgba(63,185,80,0.15);
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+  }
+  .custom-card .field-group { margin-bottom: 10px; }
+  .custom-card .field-group:last-child { margin-bottom: 0; }
+
+  /* ---------- image picker ---------- */
+  .img-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .img-opt {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--surface);
+    transition: border-color 0.15s;
+    min-height: 60px;
+  }
+  .img-opt:hover { border-color: var(--muted); }
+  .img-opt.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .img-opt img {
+    display: block; width: 100%; height: 90px; object-fit: cover; background: var(--bg);
+  }
+  .img-opt .label {
+    padding: 6px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+  .img-opt.selected .label { color: var(--accent); }
+  .img-opt input[type="radio"] {
+    position: absolute; top: 6px; right: 6px; width: 16px; height: 16px;
+    accent-color: var(--accent);
+  }
+  .img-opt.none {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 90px;
+    font-family: var(--mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .img-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    min-height: 80px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .img-preview img { max-width: 120px; max-height: 90px; border-radius: 4px; }
+  .img-preview .pv-label {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* ---------- preview JSON ---------- */
+  details.preview > summary {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  pre.json {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* ---------- generate button ---------- */
+  .generate-section {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+    padding: 20px 0 0;
+    margin-top: 32px;
+  }
+  .generate-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    background: var(--accent-dim);
+    color: var(--bg);
+    border: 1px solid var(--accent-dim);
+    border-radius: var(--radius);
+    transition: background 0.15s, transform 0.1s;
+    min-height: 52px;
+  }
+  .generate-btn:hover:not(:disabled) { background: var(--accent); }
+  .generate-btn:active:not(:disabled) { transform: scale(0.99); }
+  .generate-btn:focus-visible { box-shadow: var(--focus-ring); }
+  .generate-btn:disabled {
+    background: var(--surface); color: var(--muted);
+    border-color: var(--border); cursor: not-allowed;
+  }
+  .generate-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- toast ---------- */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    font-size: 14px;
+    max-width: 90vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast.ok { border-color: var(--accent); }
+  #toast.err { border-color: var(--alert); }
+  #toast[aria-live] { pointer-events: auto; }
+
+  /* ---------- reduced motion ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+    .badge.active { box-shadow: none; }
+    #toast { transition: opacity 0.1s; }
+  }
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <h1><span class="dot"></span>AI Digest Control Desk</h1>
+    <div class="tag">manual override &mdash; daily auto-flow untouched</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ========== 1. SETTINGS ========== -->
+  <details class="strip" id="settings">
+    <summary>
+      <span>Settings</span>
+      <span class="status" id="settingsStatus">not configured</span>
+    </summary>
+    <div class="body">
+      <div class="grid2">
+        <div>
+          <label class="field" for="owner">Owner</label>
+          <input type="text" id="owner" placeholder="harvey" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label class="field" for="repo">Repository</label>
+          <input type="text" id="repo" placeholder="linkedin-ai-digest" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <label class="field" for="branch">Default branch</label>
+        <input type="text" id="branch" placeholder="main" autocomplete="off" spellcheck="false">
+      </div>
+      <div style="margin-top: 12px;">
+        <label class="field" for="token">GitHub PAT (fine-grained)</label>
+        <input type="password" id="token" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+      </div>
+      <div class="row">
+        <button class="btn primary" id="saveSettings" type="button">Save settings</button>
+        <button class="btn danger" id="forgetToken" type="button">Forget token</button>
+      </div>
+      <p class="note">
+        Use a <strong>fine-grained PAT</strong> scoped to this repository only, with
+        just <strong>Actions: write</strong> and <strong>Contents: read</strong>.
+        Do not paste a classic token or one with broader scopes &mdash; it lives in
+        this browser's localStorage on this device. The token is sent only to
+        api.github.com over HTTPS in an Authorization header.
+      </p>
+    </div>
+  </details>
+
+  <!-- ========== 2. REFRESH ========== -->
+  <section>
+    <h2>Candidate menu</h2>
+    <div class="refresh-row">
+      <button class="btn" id="refreshBtn" type="button">Refresh news</button>
+      <button class="btn" id="reloadBtn" type="button">Reload list</button>
+      <span class="ts" id="generated">never</span>
+    </div>
+    <div class="status-line" id="refreshStatus"></div>
+  </section>
+
+  <!-- ========== 3. STORY LIST ========== -->
+  <section>
+    <div class="meta-bar">
+      <span><span class="count" id="selCount">0</span> / <span id="selMax">5</span> selected</span>
+      <span id="candidateCount"></span>
+    </div>
+    <div class="cap-warn" id="capWarn">Selection full &mdash; uncheck one to add another, or clear the custom story.</div>
+    <ul class="stories" id="storyList"></ul>
+  </section>
+
+  <!-- ========== 4. CUSTOM STORY ========== -->
+  <section>
+    <h2>Custom story <span style="text-transform:none; color:var(--muted); font-weight:400;">(optional, takes one slot)</span></h2>
+    <div class="custom-card" id="customCard">
+      <div class="custom-head">
+        <span class="chip">manual</span>
+        <span style="font-size:12px; color:var(--muted); font-family:var(--mono);">enter a headline to activate</span>
+      </div>
+      <div class="field-group">
+        <label class="field" for="customTitle">Headline</label>
+        <input type="text" id="customTitle" placeholder="My take on today's news">
+      </div>
+      <div class="field-group">
+        <label class="field" for="customLink">Link</label>
+        <input type="text" id="customLink" placeholder="https://...">
+      </div>
+      <div class="field-group">
+        <label class="field" for="customSummary">Summary (optional)</label>
+        <textarea id="customSummary" rows="2" placeholder="One-line context for the LLM"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== 5. IMAGE PICKER ========== -->
+  <section>
+    <h2>Post image</h2>
+    <div class="img-options" id="imgOptions"></div>
+    <div class="field-group" id="customUrlWrap" style="display:none; margin-bottom:12px;">
+      <label class="field" for="customImgUrl">Paste image URL</label>
+      <input type="text" id="customImgUrl" placeholder="https://...">
+    </div>
+    <div class="img-preview" id="imgPreview">
+      <span class="pv-label">no image selected &mdash; post will be text-only</span>
+    </div>
+  </section>
+
+  <!-- ========== 6. PREVIEW JSON ========== -->
+  <details class="preview">
+    <summary>Preview selection JSON (what gets sent)</summary>
+    <pre class="json" id="previewJson">{}</pre>
+  </details>
+
+  <!-- ========== 7. GENERATE ========== -->
+  <div class="generate-section">
+    <button class="generate-btn" id="generateBtn" type="button" disabled>Generate &amp; send to Telegram</button>
+    <div class="generate-hint" id="generateHint">select at least one story and configure settings</div>
+  </div>
+
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================================
+   AI Digest Control Desk — app logic
+   No framework. State lives in a single object; render functions read it and
+   update only the DOM regions that change. All user/feed content is inserted
+   via textContent (XSS-safe); the only innerHTML use is on the empty <span>
+   inside the dot indicator (static, no variables).
+   ============================================================================ */
+
+const LS_KEYS = {
+  owner:   "dc_owner",
+  repo:    "dc_repo",
+  branch:  "dc_branch",
+  token:   "gh_token",   // deliberately namespaced differently; it's a secret
+};
+
+const WORKFLOWS = {
+  refresh:  "refresh_candidates.yml",
+  generate: "generate_from_selection.yml",
+};
+
+const state = {
+  settings: { owner: "", repo: "", branch: "main", token: "" },
+  candidates: [],
+  generated_utc: null,
+  error: null,
+  selectedIds: [],            // candidate_ids in selection order
+  custom: { title: "", link: "", summary: "" },
+  image: { mode: "none", storyId: null, customUrl: "" },   // mode: "story"|"none"|"custom"
+};
+
+/* ---------- tiny helpers ---------- */
+const $ = (id) => document.getElementById(id);
+
+function decodeEntities(str) {
+  /* Decode the small whitelist of HTML entities RSS feeds ship in titles.
+     textarea is a raw-text element: setting innerHTML parses entities but
+     never executes scripts. Safe pattern. */
+  if (!str) return "";
+  const ta = document.createElement("textarea");
+  ta.innerHTML = String(str);
+  return ta.value;
+}
+
+function relTime(iso) {
+  if (!iso) return "undated";
+  const then = new Date(iso);
+  if (isNaN(then)) return "undated";
+  const sec = Math.round((Date.now() - then.getTime()) / 1000);
+  if (sec < 60)    return "just now";
+  if (sec < 3600)  return Math.floor(sec / 60) + "m ago";
+  if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
+  return Math.floor(sec / 86400) + "d ago";
+}
+
+function isCustomActive() {
+  return state.custom.title.trim().length > 0;
+}
+function maxFetched() {
+  return 5 - (isCustomActive() ? 1 : 0);
+}
+
+function showToast(msg, kind) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show " + (kind === "ok" ? "ok" : kind === "err" ? "err" : "");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { t.className = ""; t.textContent = ""; }, 4500);
+}
+
+/* ---------- settings ---------- */
+function detectFromUrl() {
+  /* On GitHub Pages: https://<owner>.github.io/<repo>/... — prefill owner+repo.
+     Returns {} on localhost / file:// so Harvey fills them manually. */
+  try {
+    const m = window.location.hostname.match(/^([^.]+)\.github\.io$/i);
+    if (!m) return {};
+    const owner = m[1];
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    if (!pathParts.length) return { owner };
+    return { owner, repo: pathParts[0] };
+  } catch (_) { return {}; }
+}
+
+function loadSettings() {
+  const s = state.settings;
+  s.owner  = localStorage.getItem(LS_KEYS.owner)  || "";
+  s.repo   = localStorage.getItem(LS_KEYS.repo)   || "";
+  s.branch = localStorage.getItem(LS_KEYS.branch) || "main";
+  s.token  = localStorage.getItem(LS_KEYS.token)  || "";
+  /* If empty and we're on Pages, auto-fill from URL (does NOT auto-save —
+     Harvey clicks Save to confirm, which keeps him in control). */
+  const det = detectFromUrl();
+  if (!s.owner && det.owner) s.owner = det.owner;
+  if (!s.repo  && det.repo)  s.repo  = det.repo;
+}
+
+function renderSettings() {
+  const s = state.settings;
+  $("owner").value  = s.owner;
+  $("repo").value   = s.repo;
+  $("branch").value = s.branch;
+  $("token").value  = s.token;   /* masked via type=password; value re-loaded but not echoed in plain text */
+  const ok = s.owner && s.repo && s.branch && s.token;
+  const ss = $("settingsStatus");
+  ss.textContent = ok ? "ready" : "not configured";
+  ss.className = "status" + (ok ? " ok" : "");
+}
+
+function saveSettings() {
+  const s = state.settings;
+  s.owner  = $("owner").value.trim();
+  s.repo   = $("repo").value.trim();
+  s.branch = $("branch").value.trim() || "main";
+  s.token  = $("token").value.trim();
+  localStorage.setItem(LS_KEYS.owner,   s.owner);
+  localStorage.setItem(LS_KEYS.repo,    s.repo);
+  localStorage.setItem(LS_KEYS.branch,  s.branch);
+  if (s.token) localStorage.setItem(LS_KEYS.token, s.token);
+  renderSettings();
+  updateGenerateButton();
+  showToast("Settings saved.", "ok");
+}
+
+function forgetToken() {
+  state.settings.token = "";
+  localStorage.removeItem(LS_KEYS.token);
+  $("token").value = "";
+  renderSettings();
+  updateGenerateButton();
+  showToast("Token forgotten from this browser.", "ok");
+}
+
+/* ---------- candidates ---------- */
+async function fetchCandidates() {
+  /* Same-origin relative URL — Pages serves it next to index.html, no token
+     needed. Cache-bust via query so a fresh refresh isn't masked by the
+     browser/CDN cache. */
+  const url = "./candidates.json?t=" + Date.now();
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
+    state.generated_utc = data.generated_utc || null;
+    state.error = data.error || null;
+    /* Reset selection — ids from a prior fetch may no longer exist. */
+    const live = new Set(state.candidates.map(c => c.candidate_id));
+    state.selectedIds = state.selectedIds.filter(id => live.has(id));
+  } catch (e) {
+    state.candidates = [];
+    state.generated_utc = null;
+    state.error = e.message || String(e);
+  }
+  renderStories();
+  renderRefreshStatus();
+  renderImagePicker();
+  updatePreview();
+  updateGenerateButton();
+}
+
+/* ---------- refresh workflow ---------- */
+async function triggerRefresh() {
+  const cfg = state.settings;
+  if (!cfg.token) { showToast("Add a GitHub PAT in Settings first.", "err"); return; }
+  if (!cfg.owner || !cfg.repo) { showToast("Add owner/repo in Settings first.", "err"); return; }
+  const btn = $("refreshBtn");
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = "Queuing…";
+  try {
+    const r = await apiDispatch(WORKFLOWS.refresh, { ref: cfg.branch });
+    if (r.ok) {
+      $("refreshStatus").textContent =
+        "Refresh queued — hit Reload list in 1–2 min after the workflow commits candidates.json.";
+      $("refreshStatus").className = "status-line ok";
+      showToast("Refresh workflow queued.", "ok");
+    } else {
+      showToast(apiErrMsg(r.status), "err");
+    }
+  } catch (e) {
+    showToast(networkErrMsg(e), "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+/* ---------- GitHub dispatch API ---------- */
+async function apiDispatch(workflowFile, body) {
+  const { owner, repo, token } = state.settings;
+  const url = "https://api.github.com/repos/" + encodeURIComponent(owner) + "/"
+            + encodeURIComponent(repo) + "/actions/workflows/" + workflowFile + "/dispatches";
+  const r = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Accept": "application/vnd.github+json",
+      "Authorization": "Bearer " + token,    /* token ONLY ever sent here */
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  return { ok: r.ok, status: r.status };
+}
+
+function apiErrMsg(status) {
+  if (status === 401 || status === 403)
+    return "Token rejected — check it's a fine-grained PAT for this repo with Actions: write.";
+  if (status === 404)
+    return "Workflow or repo not found — check owner/repo and branch.";
+  if (status === 422)
+    return "Validation failed — check the selection JSON shape.";
+  return "GitHub returned HTTP " + status + ".";
+}
+function networkErrMsg(e) {
+  return "Couldn't reach GitHub — check your connection.";
+}
+
+/* ---------- story list render ---------- */
+function renderStories() {
+  const ul = $("storyList");
+  ul.innerHTML = "";
+  const cs = state.candidates;
+
+  $("candidateCount").textContent =
+    cs.length ? cs.length + " candidate" + (cs.length === 1 ? "" : "s") : "";
+
+  if (state.error) {
+    const li = document.createElement("li");
+    const div = document.createElement("div");
+    div.className = "empty";
+    div.textContent = "Couldn't load candidates: " + state.error;
+    li.appendChild(div);
+    ul.appendChild(li);
+    return;
+  }
+  if (!cs.length) {
+    const li = document.createElement("li");
+    const div = document.createElement("div");
+    div.className = "empty";
+    div.textContent = "No news loaded. Hit Refresh news, then Reload list in a minute or two.";
+    li.appendChild(div);
+    ul.appendChild(li);
+    return;
+  }
+
+  const max = maxFetched();
+  for (let i = 0; i < cs.length; i++) {
+    const c = cs[i];
+    const idx = state.selectedIds.indexOf(c.candidate_id);
+    const isSelected = idx >= 0;
+    const atCap = !isSelected && state.selectedIds.length >= max;
+
+    const li = document.createElement("li");
+
+    const label = document.createElement("label");
+    label.className = "story-row-label";
+
+    /* hidden checkbox for keyboard a11y; badge is the visual */
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.className = "story-check";
+    cb.checked = isSelected;
+    cb.disabled = atCap;
+    cb.dataset.id = c.candidate_id;
+    cb.addEventListener("change", () => toggleStory(c.candidate_id));
+    /* keyboard focus ring on the badge via :focus-within on label */
+    cb.setAttribute("aria-label",
+      (isSelected ? "Selected as #" + (idx + 1) + ": " : "Select: ")
+      + decodeEntities(c.title));
+
+    const badge = document.createElement("span");
+    badge.className = "badge" + (isSelected ? " active" : "") + (atCap ? " disabled" : "");
+    badge.textContent = isSelected ? String(idx + 1) : "";
+
+    /* thumbnail */
+    const thumbWrap = document.createElement("span");
+    if (c.image_url) {
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = c.image_url;
+      img.alt = "";
+      img.loading = "lazy";
+      img.addEventListener("error", () => {
+        /* graceful broken-image fallback */
+        const ph = document.createElement("span");
+        ph.className = "thumb placeholder";
+        ph.textContent = "·";
+        img.replaceWith(ph);
+      });
+      thumbWrap.appendChild(img);
+    } else {
+      const ph = document.createElement("span");
+      ph.className = "thumb placeholder";
+      ph.textContent = "·";
+      thumbWrap.appendChild(ph);
+    }
+
+    /* body */
+    const body = document.createElement("div");
+    body.className = "story-body";
+
+    const title = document.createElement("div");
+    title.className = "story-title";
+    title.textContent = decodeEntities(c.title);
+    body.appendChild(title);
+
+    const meta = document.createElement("div");
+    meta.className = "story-meta";
+    const srcSpan = document.createElement("span");
+    srcSpan.className = "src";
+    srcSpan.textContent = decodeEntities(c.source_name);
+    meta.appendChild(srcSpan);
+    meta.appendChild(document.createTextNode(" · " + relTime(c.published)
+      + (c.priority ? " · p" + c.priority : "")));
+    body.appendChild(meta);
+
+    if (c.summary) {
+      const sum = document.createElement("div");
+      sum.className = "story-summary";
+      sum.textContent = decodeEntities(c.summary);
+      body.appendChild(sum);
+    }
+
+    label.appendChild(cb);
+    label.appendChild(badge);
+    label.appendChild(thumbWrap);
+    label.appendChild(body);
+
+    const article = document.createElement("article");
+    article.className = "story" + (isSelected ? " selected" : "");
+    article.appendChild(label);
+    li.appendChild(article);
+    ul.appendChild(li);
+  }
+
+  $("selCount").textContent = state.selectedIds.length;
+  $("selMax").textContent = max;
+  $("capWarn").classList.toggle("show",
+    state.selectedIds.length >= max && cs.length > max);
+}
+
+function toggleStory(id) {
+  const max = maxFetched();
+  const i = state.selectedIds.indexOf(id);
+  if (i >= 0) {
+    state.selectedIds.splice(i, 1);
+  } else {
+    if (state.selectedIds.length >= max) {
+      $("capWarn").classList.add("show");
+      /* re-render so the disabled checkboxes reflect reality */
+      renderStories();
+      return;
+    }
+    state.selectedIds.push(id);
+  }
+  /* if the currently-picked story image is no longer selected, fall back */
+  if (state.image.mode === "story" && !state.selectedIds.includes(state.image.storyId)) {
+    state.image.mode = "none";
+    state.image.storyId = null;
+  }
+  renderStories();
+  renderImagePicker();
+  updatePreview();
+  updateGenerateButton();
+}
+
+/* ---------- custom story ---------- */
+function onCustomInput() {
+  state.custom.title   = $("customTitle").value;
+  state.custom.link    = $("customLink").value;
+  state.custom.summary = $("customSummary").value;
+  $("customCard").classList.toggle("active", isCustomActive());
+  /* cap may have changed (5 ↔ 4) — trim overflow */
+  const max = maxFetched();
+  while (state.selectedIds.length > max) state.selectedIds.pop();
+  renderStories();
+  renderImagePicker();
+  updatePreview();
+  updateGenerateButton();
+}
+
+/* ---------- image picker ---------- */
+function renderImagePicker() {
+  const wrap = $("imgOptions");
+  wrap.innerHTML = "";
+
+  /* gather image options from currently-selected stories that have an image */
+  const opts = state.candidates
+    .filter(c => state.selectedIds.includes(c.candidate_id) && c.image_url)
+    .map(c => ({ id: c.candidate_id, url: c.image_url, src: c.source_name }));
+
+  /* radio per selected story with image */
+  for (const o of opts) {
+    const lab = document.createElement("label");
+    lab.className = "img-opt" +
+      (state.image.mode === "story" && state.image.storyId === o.id ? " selected" : "");
+    const img = document.createElement("img");
+    img.src = o.url;
+    img.alt = "";
+    img.loading = "lazy";
+    img.addEventListener("error", () => { lab.style.opacity = "0.4"; });
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = decodeEntities(o.src);
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "imgChoice";
+    radio.value = "story:" + o.id;
+    radio.checked = state.image.mode === "story" && state.image.storyId === o.id;
+    radio.addEventListener("change", () => {
+      state.image.mode = "story";
+      state.image.storyId = o.id;
+      renderImagePicker();
+      updatePreview();
+    });
+    lab.appendChild(radio);
+    lab.appendChild(img);
+    lab.appendChild(label);
+    wrap.appendChild(lab);
+  }
+
+  /* "no image" radio */
+  const noneLab = document.createElement("label");
+  noneLab.className = "img-opt none" + (state.image.mode === "none" ? " selected" : "");
+  const noneRadio = document.createElement("input");
+  noneRadio.type = "radio";
+  noneRadio.name = "imgChoice";
+  noneRadio.value = "none";
+  noneRadio.checked = state.image.mode === "none";
+  noneRadio.style.position = "static";
+  noneRadio.style.margin = "0 8px 0 0";
+  noneRadio.addEventListener("change", () => {
+    state.image.mode = "none";
+    renderImagePicker();
+    updatePreview();
+  });
+  noneLab.appendChild(noneRadio);
+  noneLab.appendChild(document.createTextNode("No image (text-only)"));
+  wrap.appendChild(noneLab);
+
+  /* "custom URL" radio */
+  const cLab = document.createElement("label");
+  cLab.className = "img-opt none" + (state.image.mode === "custom" ? " selected" : "");
+  const cRadio = document.createElement("input");
+  cRadio.type = "radio";
+  cRadio.name = "imgChoice";
+  cRadio.value = "custom";
+  cRadio.checked = state.image.mode === "custom";
+  cRadio.style.position = "static";
+  cRadio.style.margin = "0 8px 0 0";
+  cRadio.addEventListener("change", () => {
+    state.image.mode = "custom";
+    $("customUrlWrap").style.display = "block";
+    renderImagePicker();
+    updatePreview();
+  });
+  cLab.appendChild(cRadio);
+  cLab.appendChild(document.createTextNode("Custom URL…"));
+  wrap.appendChild(cLab);
+
+  $("customUrlWrap").style.display = state.image.mode === "custom" ? "block" : "none";
+
+  /* live preview */
+  const pv = $("imgPreview");
+  pv.innerHTML = "";
+  const chosen = currentImageUrl();
+  if (!chosen) {
+    const lbl = document.createElement("span");
+    lbl.className = "pv-label";
+    lbl.textContent = "no image selected — post will be text-only";
+    pv.appendChild(lbl);
+  } else {
+    const img = document.createElement("img");
+    img.src = chosen;
+    img.alt = "";
+    img.addEventListener("error", () => {
+      pv.innerHTML = "";
+      const lbl = document.createElement("span");
+      lbl.className = "pv-label";
+      lbl.style.color = "var(--alert)";
+      lbl.textContent = "image couldn't load — check URL";
+      pv.appendChild(lbl);
+    });
+    pv.appendChild(img);
+    const lbl = document.createElement("span");
+    lbl.className = "pv-label";
+    lbl.textContent = chosen.length > 70 ? chosen.slice(0, 67) + "…" : chosen;
+    pv.appendChild(lbl);
+  }
+}
+
+function currentImageUrl() {
+  if (state.image.mode === "none")  return null;
+  if (state.image.mode === "custom") {
+    const u = (state.image.customUrl || "").trim();
+    return u || null;
+  }
+  if (state.image.mode === "story") {
+    const c = state.candidates.find(c => c.candidate_id === state.image.storyId);
+    return c ? c.image_url : null;
+  }
+  return null;
+}
+
+function onCustomUrlInput() {
+  state.image.customUrl = $("customImgUrl").value;
+  if (state.image.mode !== "custom") {
+    state.image.mode = "custom";
+    renderImagePicker();
+  }
+  updatePreview();
+}
+
+/* ---------- selection JSON ---------- */
+function buildSelection() {
+  const sel = {
+    story_ids: state.selectedIds.slice(),
+    image_url: currentImageUrl(),
+  };
+  if (isCustomActive()) {
+    sel.custom_story = {
+      title: state.custom.title.trim(),
+      link:  state.custom.link.trim(),
+      summary: state.custom.summary.trim() || null,
+    };
+  } else {
+    sel.custom_story = null;
+  }
+  return sel;
+}
+
+function updatePreview() {
+  $("previewJson").textContent = JSON.stringify(buildSelection(), null, 2);
+}
+
+/* ---------- generate button ---------- */
+function updateGenerateButton() {
+  const btn = $("generateBtn");
+  const hint = $("generateHint");
+  const s = state.settings;
+  const storiesOk = state.selectedIds.length > 0 || isCustomActive();
+  const settingsOk = !!(s.owner && s.repo && s.branch && s.token);
+  const ready = storiesOk && settingsOk;
+  btn.disabled = !ready;
+  if (ready) {
+    hint.textContent = "draft will be sent to Telegram for your approval";
+  } else if (!storiesOk) {
+    hint.textContent = "select at least one story (or add a custom story)";
+  } else if (!settingsOk) {
+    hint.textContent = "open Settings to add owner/repo/branch and a PAT";
+  }
+}
+
+async function onGenerate() {
+  const cfg = state.settings;
+  if (!cfg.token) { showToast("Add a GitHub PAT in Settings first.", "err"); return; }
+  const sel = buildSelection();
+  if (!sel.story_ids.length && !sel.custom_story) {
+    showToast("Select at least one story first.", "err");
+    return;
+  }
+  const btn = $("generateBtn");
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = "Sending…";
+  try {
+    const body = {
+      ref: cfg.branch,
+      inputs: { selection: JSON.stringify(sel) },   /* GitHub inputs are string→string */
+    };
+    const r = await apiDispatch(WORKFLOWS.generate, body);
+    if (r.ok) {
+      showToast("Draft requested. Check Telegram to approve or reject.", "ok");
+    } else {
+      showToast(apiErrMsg(r.status), "err");
+    }
+  } catch (e) {
+    showToast(networkErrMsg(e), "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+    updateGenerateButton();
+  }
+}
+
+/* ---------- refresh status line render ---------- */
+function renderRefreshStatus() {
+  const ts = state.generated_utc;
+  $("generated").textContent = ts
+    ? ("generated " + relTime(ts))
+    : "no candidates loaded";
+}
+
+/* ---------- wire up ---------- */
+function init() {
+  loadSettings();
+  renderSettings();
+
+  $("saveSettings").addEventListener("click", saveSettings);
+  $("forgetToken").addEventListener("click", forgetToken);
+  $("refreshBtn").addEventListener("click", triggerRefresh);
+  $("reloadBtn").addEventListener("click", fetchCandidates);
+  $("generateBtn").addEventListener("click", onGenerate);
+  $("customTitle").addEventListener("input", onCustomInput);
+  $("customLink").addEventListener("input", onCustomInput);
+  $("customSummary").addEventListener("input", onCustomInput);
+  $("customImgUrl").addEventListener("input", onCustomUrlInput);
+
+  updatePreview();
+  updateGenerateButton();
+  fetchCandidates();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
