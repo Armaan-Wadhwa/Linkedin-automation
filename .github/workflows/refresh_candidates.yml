@@ -1,0 +1,77 @@
+# Refresh dashboard candidates — Phase 4 Task 12 (part A).                  # STEP [19]
+#
+# Triggered manually from the future web dashboard (Task 13, OUT OF SCOPE):
+# Harvey taps "refresh" → the dashboard calls this workflow_dispatch with a
+# browser-only GitHub PAT (never handled by repo code). This run fetches + ranks
+# the day's stories and commits docs/candidates.json, which the dashboard reads.
+#
+# No cron: refreshes only when Harvey wants a fresh menu (free-tier friendly).
+#
+# Concurrency: MUST share daily-digest + approve.yml's group so it can never
+# race a daily.yml or approve.yml git push on history.json / pending_post.json.
+# cancel-in-progress: false so a queued refresh isn't dropped mid-flight.
+#
+# This workflow does NOT generate a post, send a Telegram draft, or post to
+# LinkedIn. It only writes the candidate menu. Selection → draft happens in
+# generate_from_selection.yml.
+
+name: refresh-candidates
+
+on:
+  workflow_dispatch: {}     # dashboard (or Harvey, manually) triggers it
+
+permissions:
+  contents: write           # needed to commit docs/candidates.json + runs.log
+
+concurrency:
+  group: daily-digest       # MUST match daily.yml + approve.yml exactly (repo-wide group)
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Emit candidate menu
+        id: emit
+        continue-on-error: true   # so the log/commit steps below always run
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}    # not used by emit, but harmless + future-proof
+          REDDIT_FEED_PARAMS: ${{ secrets.REDDIT_FEED_PARAMS }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python src/emit_candidates.py
+
+      - name: Append run log (keeps repo active)
+        if: always()
+        run: echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') refresh outcome=${{ steps.emit.outcome }}" >> runs.log
+
+      - name: Commit candidates and run log
+        if: always()
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/candidates.json runs.log
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: refresh candidates $(date -u '+%Y-%m-%d %H:%M') [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push
+          fi
+
+      - name: Fail the run if emit failed
+        if: steps.emit.outcome == 'failure'
+        run: exit 1

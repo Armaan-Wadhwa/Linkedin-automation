@@ -16,6 +16,7 @@ Exit codes: 0 = draft generated AND awaiting approval on Telegram;
 the unreviewed draft is marked not-approvable). Red run = alerting.
 """
 
+import argparse                                                       # STEP [19]
 import json      # STEP [8]
 import logging
 import os
@@ -39,6 +40,44 @@ HISTORY_PATH = os.path.join(REPO_ROOT, config.HISTORY_FILE)
 PENDING_POST_PATH = os.path.join(REPO_ROOT, config.PENDING_POST_FILE)  # STEP [8]
 
 
+def supersede_pending(pending_path=None):                              # STEP [19]
+    """Invalidate any un-actioned stale draft so the workflow's checkout-restore
+    # STEP [19] can never leave an old draft approvable. Terminal / retryable
+    # STEP [19] states (posted / approved / post_failed / rejected / expired) are
+    # STEP [19] left untouched — defense-in-depth for the audit trail.
+    # STEP [19]
+    # STEP [19] Extracted from run() so select_build.py reuses the EXACT same
+    # STEP [19] supersede-on-start logic — the invariant holds because both entry
+    # STEP [19] points call this function, not because each reimplements it.
+    # STEP [19] Returns 0 on success, 1 if the supersede write failed (caller
+    # STEP [19] must abort red so an old draft can never be approved)."""
+    path = pending_path or PENDING_POST_PATH                            # STEP [19]
+    if not os.path.exists(path):                                        # STEP [19]
+        return 0                                                        # STEP [19] nothing to do
+    prev_status = None                                                  # STEP [19]
+    try:                                                                # STEP [19]
+        with open(path, "r", encoding="utf-8") as fh:                   # STEP [19]
+            prev = json.load(fh)                                        # STEP [19]
+        if isinstance(prev, dict):                                      # STEP [19]
+            prev_status = prev.get("status")                            # STEP [19]
+    except (OSError, json.JSONDecodeError):                             # STEP [19]
+        prev_status = None   # corrupt → can't trust it → supersede      # STEP [19]
+    if prev_status in ("awaiting_approval", "notify_failed",            # STEP [19]
+                       "superseded", None):                             # STEP [19]
+        try:                                                            # STEP [19]
+            with open(path, "w", encoding="utf-8") as fh:               # STEP [19]
+                json.dump({"status": "superseded"}, fh, indent=2)       # STEP [19]
+        except OSError as exc:                                          # STEP [19]
+            log.error("supersede_pending: cannot invalidate stale %s (%s) — "
+                      "aborting so an old draft can never be approved",
+                      path, exc)                                        # STEP [19]
+            return 1                                                    # STEP [19]
+    else:                                                               # STEP [19]
+        log.info("supersede_pending: leaving %s alone "                  # STEP [19]
+                 "(status=%s is terminal/retryable)", path, prev_status)  # STEP [19]
+    return 0                                                            # STEP [19]
+
+
 def run():
     # STEP [8] FIRST, before anything can fail: the workflow commits
     # STEP [8] pending_post.json, so checkout restores yesterday's file on
@@ -54,28 +93,8 @@ def run():
     # STEP [10] would lose the post record or a pending retry. The concurrency
     # STEP [10] group already prevents a same-moment approve.py interruption,
     # STEP [10] so this guard is defense-in-depth for the audit trail.
-    if os.path.exists(PENDING_POST_PATH):                            # STEP [10]
-        prev_status = None                                          # STEP [10]
-        try:                                                         # STEP [10]
-            with open(PENDING_POST_PATH, "r", encoding="utf-8") as fh:  # STEP [10]
-                prev = json.load(fh)                                 # STEP [10]
-            if isinstance(prev, dict):                               # STEP [10]
-                prev_status = prev.get("status")                     # STEP [10]
-        except (OSError, json.JSONDecodeError):                      # STEP [10]
-            prev_status = None   # corrupt → can't trust it → supersede  # STEP [10]
-        if prev_status in ("awaiting_approval", "notify_failed",      # STEP [10]
-                           "superseded", None):                       # STEP [10]
-            try:                                                     # STEP [10]
-                with open(PENDING_POST_PATH, "w", encoding="utf-8") as fh:  # STEP [10]
-                    json.dump({"status": "superseded"}, fh, indent=2)  # STEP [10]
-            except OSError as exc:                                   # STEP [10]
-                log.error("run: cannot invalidate stale %s (%s) — aborting so "
-                          "an old draft can never be approved",
-                          PENDING_POST_PATH, exc)                    # STEP [10]
-                return 1                                             # STEP [10]
-        else:                                                        # STEP [10]
-            log.info("run: leaving pending_post.json alone "          # STEP [10]
-                     "(status=%s is terminal/retryable)", prev_status)  # STEP [10]
+    if supersede_pending() != 0:                                        # STEP [19] was inline
+        return 1                                                        # STEP [19]
 
     stories = fetch.fetch_all()
     if not stories:
@@ -158,4 +177,27 @@ if __name__ == "__main__":
     if hasattr(sys.stdout, "reconfigure"):        # STEP [8] Windows cp1252 console
         sys.stdout.reconfigure(encoding="utf-8")  # STEP [8] can't encode draft emoji
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+
+    # STEP [19] Optional manual-selection entry: dashboard writes a JSON file,
+    # STEP [19] workflow copies it to a tmp path, runs main.py with this flag.
+    # STEP [19] Default (no args) = unchanged auto-ranked flow. The two paths
+    # STEP [19] share supersede_pending() + notify.send_draft + pending_post.json
+    # STEP [19] state machine; the manual path is a second entry into the SAME
+    # STEP [19] approval machinery, NOT a parallel one.
+    parser = argparse.ArgumentParser(description="LinkedIn AI digest generator")  # STEP [19]
+    parser.add_argument("--from-selection", metavar="PATH", default=None,          # STEP [19]
+                        help="Build the post from a JSON selection file "          # STEP [19]
+                             "(dashboard manual-override path)")                  # STEP [19]
+    args = parser.parse_args()                                       # STEP [19]
+    if args.from_selection:                                          # STEP [19]
+        import select_build                                          # STEP [19] lazy: keeps the auto path import-light
+        try:                                                         # STEP [19]
+            with open(args.from_selection, "r", encoding="utf-8") as fh:  # STEP [19]
+                selection = json.load(fh)                            # STEP [19]
+        except (OSError, json.JSONDecodeError) as exc:               # STEP [19]
+            log.error("main: cannot read selection file %s (%s)",     # STEP [19]
+                      args.from_selection, exc)                       # STEP [19]
+            sys.exit(1)                                              # STEP [19]
+        sys.exit(select_build.build_from_selection(selection))       # STEP [19]
+
     sys.exit(run())

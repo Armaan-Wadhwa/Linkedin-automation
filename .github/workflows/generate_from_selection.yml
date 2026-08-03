@@ -1,0 +1,103 @@
+# Generate draft from a manual selection — Phase 4 Task 12 (part A).       # STEP [19]
+#
+# Triggered manually from the future web dashboard (Task 13): Harvey picks
+# stories + image + optional custom story → dashboard calls this workflow_dispatch
+# with a single JSON string input (selection), using a browser-only GitHub PAT
+# (never handled by repo code).
+#
+# This workflow generates a draft from the selection and sends it to Telegram
+# for the SAME approve flow the auto path uses. It does NOT post to LinkedIn —
+# approve.yml (untouched) handles a winning ✅ tap exactly as before.
+#
+# Concurrency: MUST share daily-digest + approve.yml's group so it can never
+# race a daily.yml or approve.yml git push on history.json / pending_post.json.
+# cancel-in-progress: false so a queued manual draft isn't dropped mid-flight.
+
+name: generate-from-selection
+
+on:
+  workflow_dispatch:
+    inputs:
+      selection:
+        description: 'JSON selection: {"story_ids": [...], "image_url": null|str, "custom_story": {...}|null}'
+        required: true
+        type: string
+
+permissions:
+  contents: write           # needed to commit history.json + pending_post.json + runs.log
+
+concurrency:
+  group: daily-digest       # MUST match daily.yml + approve.yml exactly (repo-wide group)
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+        with:
+          # Check out the branch TIP, not the SHA pinned when this run was
+          # created. A run queued behind an approve.yml would otherwise see a
+          # stale pending_post.json and could supersede a draft Harvey just
+          # approved.
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Write selection JSON to tmp file
+        # workflow_dispatch string input → file the Python entry can read.
+        # mktemp so concurrent runs (defensive — concurrency group already
+        # serializes them) can't collide on a fixed name.
+        run: |
+          tmp=$(mktemp --suffix=.json)
+          printf '%s' '${{ inputs.selection }}' > "$tmp"
+          echo "SELECTION_FILE=$tmp" >> "$GITHUB_ENV"
+
+      - name: Generate draft from selection
+        id: gen
+        continue-on-error: true   # so the log/commit steps below always run
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          REDDIT_FEED_PARAMS: ${{ secrets.REDDIT_FEED_PARAMS }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          # LINKEDIN_DRY_RUN is intentionally NOT set here. The manual path
+          # never posts (only approve.yml does, untouched). Setting DRY_RUN here
+          # would have no effect — main.py --from-selection stops at Telegram.
+        run: python src/main.py --from-selection "$SELECTION_FILE"
+
+      - name: Append run log (keeps repo active)
+        if: always()
+        run: echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') selection outcome=${{ steps.gen.outcome }}" >> runs.log
+
+      - name: Commit history, pending, and run log
+        if: always()
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add history.json runs.log
+          # pending_post.json only exists when the draft was sent successfully;
+          # a bare git add of a missing file would fail this step.
+          if [ -f pending_post.json ]; then git add pending_post.json; fi
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: manual selection $(date -u '+%Y-%m-%d %H:%M') [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push
+          fi
+
+      - name: Fail the run if generation failed
+        if: steps.gen.outcome == 'failure'
+        run: exit 1

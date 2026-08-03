@@ -87,29 +87,44 @@ def score_story(story, now):
 # ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
+def dedupe_only(stories, history, now=None):                          # STEP [19]
+    """Dedupe + score + sort the FULL candidate list (no per-source cap, no
+    # STEP [19] top-N slice). Used by emit_candidates.py (dashboard menu) and
+    # STEP [19] select_build.py (manual id resolution). dedupe_and_rank() below
+    # STEP [19] calls this then applies the per-source cap + top-N slice, so its
+    # STEP [19] behavior is byte-identical to before this refactor.
+
+    # STEP [19] Each returned story gets 'score' and 'hash' keys added. The
+    # STEP [19] 'hash' key IS the candidate_id contract (SHA-256 of normalized
+    # STEP [19] title) — emit_candidates.py and select_build.py rely on it being
+    # STEP [19] identical here and in title_hash() above. Never change one
+    # STEP [19] without the other."""
+    now = now or datetime.now(timezone.utc)                            # STEP [19]
+    seen_hashes = set(history.get("hashes", {}))                       # STEP [19]
+    candidates = []                                                    # STEP [19]
+    # STEP [19] Highest-priority copy of a cross-source duplicate wins the
+    # STEP [19] dedupe, so consider stories in priority order.
+    for story in sorted(stories, key=lambda s: s["priority"], reverse=True):  # STEP [19]
+        score = score_story(story, now)                                # STEP [19]
+        if score is None:                                              # STEP [19]
+            continue                                                   # STEP [19]
+        h = title_hash(story["title"])                                 # STEP [19]
+        if h in seen_hashes:                                           # STEP [19]
+            continue                                                   # STEP [19]
+        seen_hashes.add(h)                                             # STEP [19]
+        candidates.append(dict(story, score=round(score, 2), hash=h))  # STEP [19]
+    candidates.sort(key=lambda s: s["score"], reverse=True)            # STEP [19]
+    log.info("dedupe_only: %d in -> %d fresh+unique",                  # STEP [19]
+             len(stories), len(candidates))                            # STEP [19]
+    return candidates                                                  # STEP [19]
+
+
 def dedupe_and_rank(stories, history, now=None):
     """Return the top TOP_N_STORIES as a list of story dicts (a 'score' key is
     added to each), best first. `history` is the dict from load_history()."""
-    now = now or datetime.now(timezone.utc)
-    seen_hashes = set(history.get("hashes", {}))
-    candidates = []
-
-    # Highest-priority copy of a cross-source duplicate should win the dedupe,
-    # so consider stories in priority order.
-    for story in sorted(stories, key=lambda s: s["priority"], reverse=True):
-        score = score_story(story, now)
-        if score is None:
-            continue
-        h = title_hash(story["title"])
-        if h in seen_hashes:
-            continue
-        seen_hashes.add(h)
-        story = dict(story, score=round(score, 2), hash=h)
-        candidates.append(story)
-
-    candidates.sort(key=lambda s: s["score"], reverse=True)
+    candidates = dedupe_only(stories, history, now)                    # STEP [19] extracted
     top, per_source = [], {}                                        # FIX [6] source diversity
-    for story in candidates:                                        # FIX [6]
+    for story in candidates:                                        # FIX [6] # STEP [19]
         sid = story["source_id"]                                    # FIX [6]
         if per_source.get(sid, 0) >= config.MAX_PER_SOURCE_IN_TOP:  # FIX [6]
             continue                                                # FIX [6]
