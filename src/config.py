@@ -215,3 +215,16 @@ NEWSLETTER_BOILERPLATE = (
     "twitter", "x.com", "linkedin", "facebook", "instagram", "youtube",
     "tiktok", "forward to a friend", "update your profile", "manage preferences",
 )
+
+# ---------------------------------------------------------------------------
+# YouTube transcript enrichment (Phase 3, Task 11)                 # STEP [16]
+# ---------------------------------------------------------------------------
+# STEP [16] Vaibhav Sisinty's YouTube RSS (source_id 12) ships clickbait titles
+# STEP [16] with empty/thin summaries ("The results shocked me!"). Pulling the
+# STEP [16] transcript lets generate.py ground the bullet in what the video
+# STEP [16] actually says. ALWAYS non-fatal: missing captions, rate limits, or
+# STEP [16] the library being absent -> the story keeps its title-only form.
+# STEP [16] Transcripts only ENRICH; they never block, drop, or crash a story.
+YOUTUBE_SOURCE_ID = 12            # STEP [16] only this channel gets enriched
+YT_TRANSCRIPT_MAX_CHARS = 1500    # STEP [16] enough to summarize from, not the whole video
+YT_MAX_ENRICH = 3                 # STEP [16] transcript fetches are slow; cap per run

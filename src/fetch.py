@@ -37,6 +37,10 @@ _WS_RE = re.compile(r"\s+")
 # STEP [11] first <img src="..."> in HTML — used to extract article images
 _IMG_SRC_RE = re.compile(r'<img[^>]+src=["\']([^"\']+)["\']', re.IGNORECASE)
 
+# STEP [16] epoch sentinel for sorting undated YouTube stories last in the
+# STEP [16] enrichment pass (mirrors fetch_source's local `epoch` pattern).
+_EPOCH = datetime.fromtimestamp(0, tz=timezone.utc)
+
 
 def _clean_text(html_or_text, limit=500):
     """Strip HTML tags and collapse whitespace; truncate to `limit` chars."""
@@ -238,8 +242,54 @@ def fetch_all():
     else:                                                             # STEP [14]
         log.debug("fetch_all: GMAIL_ADDRESS unset — skipping newsletters")  # STEP [14]
 
+    # STEP [16] YouTube transcript enrichment — Vaibhav's channel only.
+    # STEP [16] ADDITIVE and ALWAYS non-fatal: its own try/except so a transcript
+    # STEP [16] failure (missing captions, rate limit, library absent) can NEVER
+    # STEP [16] affect the stories already gathered. Gated on a successful lazy
+    # STEP [16] import so runs without youtube-transcript-api skip cleanly.
+    _enrich_youtube(all_stories)                                      # STEP [16]
+
     log.info("fetch_all: %d stories from %d sources", len(all_stories), len(config.SOURCES))
     return all_stories
+
+
+def _enrich_youtube(all_stories):                                     # STEP [16]
+    """Enrich source_id 12 stories with their YouTube transcript (in place).
+
+    # STEP [16] Extracted as a helper so the import-gate and YT_MAX_ENRICH cap
+    # STEP [16] are directly testable offline without driving fetch_all() over
+    # STEP [16] the network. Mutates stories in place; never lets enrichment
+    # STEP [16] failure affect the rest of the pool.
+    # STEP [16]   - import-gated: ImportError -> debug log, clean skip
+    # STEP [16]   - only source_id 12 stories passed to enrich()
+    # STEP [16]   - newest-first, capped at YT_MAX_ENRICH (transcript fetches are slow)
+    # STEP [16]   - own try/except around the whole pass: any failure -> WARNING
+    """
+    try:                                                              # STEP [16]
+        import youtube_transcript_api  # noqa: F401                  # STEP [16] the real gate: probe the third-party dep
+        import youtube_enrich                                         # STEP [16] our enrichment module (always importable; in-gate for safety)
+    except ImportError:                                               # STEP [16]
+        log.debug("fetch_all: youtube-transcript-api not installed — skipping enrichment")  # STEP [16]
+        return                                                        # STEP [16]
+
+    yt_stories = [s for s in all_stories                              # STEP [16]
+                  if s.get("source_id") == config.YOUTUBE_SOURCE_ID]
+    if not yt_stories:                                                # STEP [16]
+        return                                                        # STEP [16]
+
+    try:                                                              # STEP [16]
+        # all_stories isn't globally sorted; sort newest-first so the cap
+        # enriches the MOST RECENT Vaibhav videos (the ones most likely to
+        # make today's digest). Undated stories sort last.
+        yt_stories.sort(key=lambda s: s.get("published") or _EPOCH, reverse=True)  # STEP [16]
+        for s in yt_stories[:config.YT_MAX_ENRICH]:                   # STEP [16]
+            youtube_enrich.enrich(s)                                  # STEP [16] never raises
+        log.info("fetch_all: enriched up to %d YouTube stories (%d present, cap %d)",  # STEP [16]
+                 min(len(yt_stories), config.YT_MAX_ENRICH),          # STEP [16]
+                 len(yt_stories), config.YT_MAX_ENRICH)               # STEP [16]
+    except Exception as exc:  # noqa: BLE001                          # STEP [16]
+        log.warning("fetch_all: YouTube enrichment pass failed (%s: %s) — skipped",  # STEP [16]
+                    type(exc).__name__, exc)                          # STEP [16]
 
 
 if __name__ == "__main__":
