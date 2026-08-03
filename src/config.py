@@ -141,17 +141,17 @@ PENDING_POST_FILE = "pending_post.json"      # STEP [8] repo-root state file for
 # ---------------------------------------------------------------------------
 # Approval poller / Run B (used by approve.py)                      # STEP [9]
 # ---------------------------------------------------------------------------
-# STEP [9] Draft is generated 02:53 UTC; the last approve.yml poll is 10:53 UTC,
-# STEP [9] so at the final poll the draft is 8h old. 14h leaves ample slack for a
-# STEP [9] late daily.yml AND for an afternoon tap (Harvey taps mornings/afternoons
-# STEP [9] IST) to still be approvable when an afternoon poll reads it.
-# STEP [9] NEVER raise above 24: Telegram discards unconfirmed updates at 24h,
-# STEP [9] so beyond that we would be waiting on a tap that can no longer arrive.
-# STEP [13] Was 7: the old poll window ended 08:53 UTC (14:23 IST), so any tap
-# STEP [13] after 14:23 IST was never polled before the draft expired/superseded
-# STEP [13] the next morning — Harvey's afternoon taps silently dropped every day.
-APPROVAL_EXPIRY_H = 14
-TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max; also the negative-offset depth
+# STEP [18] Was 14h (STEP [13]). Raised to 26h: with 24h polling, a tap at any
+# STEP [18] hour is read within 30 min, but the DRAFT must still be un-expired
+# STEP [18] when the poll reads it. A draft created at 08:23 IST that Harvey taps
+# STEP [18] at 23:00 is read at 23:23 IST (15h old, fine). But if the 23:23 poll
+# STEP [18] is missed (GitHub cron delay), the next morning's poll at 08:53 IST
+# STEP [18] is 24.5h after creation — needs >24h expiry to still be approvable.
+# STEP [18] The old "never above 24" concern was about Telegram's 24h update
+# STEP [18] retention, but that's measured from TAP time (not draft creation).
+# STEP [18] A tap at 23:00 IST is still in Telegram's queue at 08:53 IST (10h < 24h).
+APPROVAL_EXPIRY_H = 26
+TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max
 
 # ---------------------------------------------------------------------------
 # LinkedIn posting (used by post_linkedin.py / approve.py)           # STEP [10]

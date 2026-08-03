@@ -85,7 +85,12 @@ def _run(tmp, state, updates=(), raise_on=None,
         calls.append((method, payload))
         if raise_on and method == raise_on:
             raise RuntimeError("boom")
-        return list(updates) if method == "getUpdates" else {"ok": True}
+        if method == "getUpdates":
+            # STEP [18] confirm call (offset > 0) returns no new updates
+            if payload.get("offset", 0) > 0:
+                return []
+            return list(updates)
+        return {"ok": True}
 
     def fake_post(text, image_ref=None):                              # STEP [12]
         post_calls.append(text)
@@ -365,6 +370,8 @@ def _run_with_photo(tmp, state_dict, updates, getfile_result=None,
     def fake_api(method, payload, token, **kw):
         calls.append((method, payload))                              # STEP [12]
         if method == "getUpdates":
+            if payload.get("offset", 0) > 0:                        # STEP [18] confirm
+                return []
             return list(updates)
         if method == "getFile":
             return getfile_result

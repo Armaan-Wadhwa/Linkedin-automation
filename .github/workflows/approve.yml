@@ -16,7 +16,11 @@ name: approve-digest
 
 on:
   schedule:
-    - cron: '23,53 3-10 * * *'  # every 30 min, 03:23-10:53 UTC = 08:53-16:23 IST   # STEP [13]
+    # STEP [18] 24h polling (was 03:23-10:53 UTC). With the old narrow window, a
+    # STEP [18] tap after 16:23 IST wasn't read until the next morning, by which
+    # STEP [18] time the draft was expired/superseded. Public repo = unlimited
+    # STEP [18] Actions minutes, so polling every 30 min around the clock is free.
+    - cron: '23,53 * * * *'  # every 30 min, 24h
   workflow_dispatch: {}          # manual runs for testing
 
 permissions:

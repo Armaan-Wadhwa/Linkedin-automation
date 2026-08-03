@@ -14,22 +14,19 @@ Run from the repo root:  python src/approve.py
 (pending_post.json resolves to the repo root regardless of CWD.)
 
 Design notes worth keeping:
-- We NEVER pass a positive `offset` to getUpdates. Confirming an update is
-  irreversible; if we confirmed and the workflow's push then failed, the tap
-  would be gone from both the repo and Telegram with the buttons already
-  stripped. Not confirming makes that self-healing — the next poll re-finds
-  the same callback. Idempotency comes from the status gate below instead.
-- We DO pass a negative offset (-TELEGRAM_UPDATE_LIMIT). With no offset,
-  getUpdates returns the OLDEST updates capped at `limit`, so a queue over
-  100 would leave today's callback past the cutoff: permanently invisible,
-  logging "no decision yet" forever, indistinguishable from "hasn't tapped".
-  A negative offset reads the newest 100 and forgets older ones.
+- STEP [18] STANDARD getUpdates pattern: read with NO offset (returns all
+  unconfirmed updates, oldest-first), process, then CONFIRM with
+  offset=max_update_id+1. This is the canonical Telegram bot approach.
+  Previously used a non-standard negative offset (offset=-100) which "reads
+  the newest 100 and forgets older ones" — the "forgetting" silently
+  confirmed/deleted Harvey's taps between polls, causing the approve button
+  to mysteriously fail on cron while working on manual trigger.
+- Confirming after read is SAFE: any decision found is saved to
+  pending_post.json (the source of truth) BEFORE the confirm call. If the
+  post fails later, the decision is already recorded — the tap is no longer
+  needed (the status="approved" retry path re-posts without getUpdates).
 - `allowed_updates=["callback_query","message"]` so BOTH button taps and photo
-  overrides are visible. This setting persists bot-globally — a plain browser
-  getUpdates will now see messages too (the Telegram default; the previous
-  callback-only filter was the non-standard choice). NOTE: Telegram DROPS (not
-  queues) updates of excluded types, so Harvey's photo must arrive AFTER the
-  first approve.py run with this setting — the dry-run accounts for this.
+  overrides are visible. This setting persists bot-globally.
 - A tap can only be matched while the draft is fresh (APPROVAL_EXPIRY_H).
 
 Exit codes: 0 = nothing to do, or a decision was recorded. 1 = genuinely
@@ -163,6 +160,22 @@ def _find_decision(updates, chat_id, message_id):
         return None
     rejects = [m for m in matches if m[0] == "rejected"]
     return rejects[0] if rejects else matches[0]
+
+
+def _confirm_updates(updates, token):                                 # STEP [18]
+    """Confirm all read updates so the getUpdates queue stays clean. Calls
+    getUpdates with offset=max_update_id+1 — the standard Telegram pattern.
+    # STEP [18] Without this, old non-matching callbacks accumulate and clog
+    # STEP [18] the limit window. Non-fatal: a failure here just means the
+    # STEP [18] queue isn't cleaned this cycle (next poll retries). Never raises."""
+    try:
+        max_uid = max(u.get("update_id", 0) for u in updates)          # STEP [18]
+        telegram_api.api_call("getUpdates",                            # STEP [18]
+            {"offset": max_uid + 1, "limit": 1, "timeout": 0},         # STEP [18]
+            token, quiet=True)                                         # STEP [18]
+        log.debug("confirm_updates: confirmed up to update_id=%s", max_uid)  # STEP [18]
+    except Exception as exc:  # noqa: BLE001                            # STEP [18]
+        log.debug("confirm_updates: failed (%s) — non-fatal", exc)     # STEP [18]
 
 
 def _confirm(token, chat_id, message_id, cq, status, skip_message=False):
@@ -438,10 +451,9 @@ def run():
 
     updates = telegram_api.api_call(
         "getUpdates",
-        {"offset": -config.TELEGRAM_UPDATE_LIMIT,
-         "limit": config.TELEGRAM_UPDATE_LIMIT,
+        {"limit": config.TELEGRAM_UPDATE_LIMIT,                       # STEP [18] no offset
          "timeout": 0,
-         "allowed_updates": ["callback_query", "message"]},          # STEP [11]
+         "allowed_updates": ["callback_query", "message"]},           # STEP [11]
         token)
     if updates is None:
         # Transient must never become terminal: write nothing, retry next run.
@@ -467,6 +479,7 @@ def run():
 
     decision = _find_decision(updates, chat_id, message_id)
     if decision is None:
+        _confirm_updates(updates, token)                               # STEP [18] clean queue
         log.info("run: no decision yet")
         return 0
 
@@ -478,6 +491,7 @@ def run():
     state["callback_update_id"] = update_id
     if not _save_state(state):
         return 1
+    _confirm_updates(updates, token)                                   # STEP [18] decision saved → safe to clean queue
     log.info("run: decision recorded — %s (update_id=%s)", new_status, update_id)
 
     if new_status == "approved":
