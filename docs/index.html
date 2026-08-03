@@ -272,7 +272,7 @@
 
   article.story {
     display: grid;
-    grid-template-columns: 44px 56px 1fr;
+    grid-template-columns: 44px 1fr;       /* default: badge + body (no thumb) */
     gap: 12px;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -280,12 +280,16 @@
     padding: 12px;
     transition: border-color 0.15s, background 0.15s;
   }
+  article.story.has-thumb {
+    grid-template-columns: 44px 64px 1fr;  /* badge + thumb + body when image present */
+  }
   article.story.selected {
     border-color: var(--accent);
     background: rgba(63,185,80,0.04);
   }
   @media (max-width: 540px) {
-    article.story { grid-template-columns: 36px 48px 1fr; gap: 8px; padding: 10px; }
+    article.story { grid-template-columns: 36px 1fr; gap: 8px; padding: 10px; }
+    article.story.has-thumb { grid-template-columns: 36px 52px 1fr; }
   }
 
   /* signature element: numbered selection badge */
@@ -312,25 +316,21 @@
   @media (max-width: 540px) { .badge { width: 30px; height: 30px; font-size: 12px; } }
 
   .thumb {
-    width: 56px; height: 56px;
+    width: 64px; height: 64px;
     border-radius: 4px;
     background: var(--bg);
     border: 1px solid var(--border);
     object-fit: cover;
     align-self: center;
   }
-  .thumb.placeholder {
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono); font-size: 18px; color: var(--border);
-  }
-  @media (max-width: 540px) { .thumb { width: 48px; height: 48px; } }
+  @media (max-width: 540px) { .thumb { width: 52px; height: 52px; } }
 
   .story-body { min-width: 0; }
   .story-title {
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.35;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     color: var(--ink);
   }
   article.story.selected .story-title { color: var(--ink); }
@@ -340,9 +340,9 @@
     color: var(--muted);
     letter-spacing: 0.02em;
     margin-bottom: 6px;
-    text-transform: uppercase;
   }
-  .story-meta .src { color: var(--accent); }
+  .story-meta .src { color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  .story-meta time { cursor: help; }
   .story-summary {
     font-size: 13px;
     color: var(--muted);
@@ -745,10 +745,26 @@ function relTime(iso) {
   const then = new Date(iso);
   if (isNaN(then)) return "undated";
   const sec = Math.round((Date.now() - then.getTime()) / 1000);
+  if (sec < 0)     return "just now";   /* future-dated: treat as new */
   if (sec < 60)    return "just now";
   if (sec < 3600)  return Math.floor(sec / 60) + "m ago";
   if (sec < 86400) return Math.floor(sec / 3600) + "h ago";
   return Math.floor(sec / 86400) + "d ago";
+}
+
+function absTime(iso) {
+  /* Compact absolute timestamp for the meta line + tooltip.
+     "Aug 3 · 20:46 UTC" — unambiguous regardless of the reader's TZ. */
+  if (!iso) return "";
+  const then = new Date(iso);
+  if (isNaN(then)) return "";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                  "Jul","Aug","Sep","Oct","Nov","Dec"];
+  const m = months[then.getUTCMonth()];
+  const d = then.getUTCDate();
+  const hh = String(then.getUTCHours()).padStart(2, "0");
+  const mm = String(then.getUTCMinutes()).padStart(2, "0");
+  return m + " " + d + " · " + hh + ":" + mm + " UTC";
 }
 
 function isCustomActive() {
@@ -968,31 +984,31 @@ function renderStories() {
       (isSelected ? "Selected as #" + (idx + 1) + ": " : "Select: ")
       + decodeEntities(c.title));
 
+    /* signature element: numbered selection badge (empty circle until picked) */
     const badge = document.createElement("span");
     badge.className = "badge" + (isSelected ? " active" : "") + (atCap ? " disabled" : "");
     badge.textContent = isSelected ? String(idx + 1) : "";
 
-    /* thumbnail */
-    const thumbWrap = document.createElement("span");
-    if (c.image_url) {
+    const article = document.createElement("article");
+
+    /* thumbnail — only rendered when image_url is present. A failed load
+       removes the thumb and collapses the grid back to 2 columns so the
+       card never shows a broken-image icon or empty placeholder box. */
+    let thumbEl = null;
+    const rawImgUrl = c.image_url ? decodeEntities(c.image_url) : null;
+    if (rawImgUrl) {
       const img = document.createElement("img");
       img.className = "thumb";
-      img.src = c.image_url;
+      img.src = rawImgUrl;
       img.alt = "";
       img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";   /* some CDNs (Reddit) block hotlinks with a Referer header */
       img.addEventListener("error", () => {
-        /* graceful broken-image fallback */
-        const ph = document.createElement("span");
-        ph.className = "thumb placeholder";
-        ph.textContent = "·";
-        img.replaceWith(ph);
+        /* hide the thumb and recollapse the grid */
+        if (thumbEl && thumbEl.parentNode) thumbEl.parentNode.removeChild(thumbEl);
+        article.classList.remove("has-thumb");
       });
-      thumbWrap.appendChild(img);
-    } else {
-      const ph = document.createElement("span");
-      ph.className = "thumb placeholder";
-      ph.textContent = "·";
-      thumbWrap.appendChild(ph);
+      thumbEl = img;
     }
 
     /* body */
@@ -1010,8 +1026,12 @@ function renderStories() {
     srcSpan.className = "src";
     srcSpan.textContent = decodeEntities(c.source_name);
     meta.appendChild(srcSpan);
-    meta.appendChild(document.createTextNode(" · " + relTime(c.published)
-      + (c.priority ? " · p" + c.priority : "")));
+    meta.appendChild(document.createTextNode(" · "));
+    const timeEl = document.createElement("time");
+    timeEl.textContent = absTime(c.published);
+    timeEl.title = relTime(c.published) || "";   /* hover for relative */
+    timeEl.dateTime = c.published || "";
+    meta.appendChild(timeEl);
     body.appendChild(meta);
 
     if (c.summary) {
@@ -1023,11 +1043,10 @@ function renderStories() {
 
     label.appendChild(cb);
     label.appendChild(badge);
-    label.appendChild(thumbWrap);
+    if (thumbEl) label.appendChild(thumbEl);
     label.appendChild(body);
 
-    const article = document.createElement("article");
-    article.className = "story" + (isSelected ? " selected" : "");
+    article.className = "story" + (isSelected ? " selected" : "") + (thumbEl ? " has-thumb" : "");
     article.appendChild(label);
     li.appendChild(article);
     ul.appendChild(li);
@@ -1084,10 +1103,12 @@ function renderImagePicker() {
   const wrap = $("imgOptions");
   wrap.innerHTML = "";
 
-  /* gather image options from currently-selected stories that have an image */
+  /* gather image options from currently-selected stories that have an image.
+     Decode HTML entities in image_url (feeds ship things like &#038; for &)
+     so the URL is well-formed when the browser fetches it. */
   const opts = state.candidates
     .filter(c => state.selectedIds.includes(c.candidate_id) && c.image_url)
-    .map(c => ({ id: c.candidate_id, url: c.image_url, src: c.source_name }));
+    .map(c => ({ id: c.candidate_id, url: decodeEntities(c.image_url), src: c.source_name }));
 
   /* radio per selected story with image */
   for (const o of opts) {
@@ -1098,6 +1119,7 @@ function renderImagePicker() {
     img.src = o.url;
     img.alt = "";
     img.loading = "lazy";
+    img.referrerPolicy = "no-referrer";
     img.addEventListener("error", () => { lab.style.opacity = "0.4"; });
     const label = document.createElement("div");
     label.className = "label";
@@ -1197,7 +1219,10 @@ function currentImageUrl() {
   }
   if (state.image.mode === "story") {
     const c = state.candidates.find(c => c.candidate_id === state.image.storyId);
-    return c ? c.image_url : null;
+    /* Return the DECODED url — the entity-encoded form is not a usable URL.
+       This is what gets sent in selection.image_url; the backend re-fetches
+       it for the LinkedIn post image, so it must be the well-formed URL. */
+    return c && c.image_url ? decodeEntities(c.image_url) : null;
   }
   return null;
 }
