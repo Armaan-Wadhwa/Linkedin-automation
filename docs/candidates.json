@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-08-03T20:11:56.851570+00:00",
+  "generated_utc": "2026-08-03T20:51:25.724134+00:00",
   "candidates": [
     {
       "candidate_id": "2fc54448570457887d4d94fe69b4b368ab731fa696de8a283aa3f248ed98f073",
@@ -9,8 +9,19 @@
       "title": "China&#8217;s Alibaba takes another swipe at America’s AI supremacy",
       "link": "https://www.theverge.com/ai-artificial-intelligence/974342/alibaba-qwen-max-open-weight-ai",
       "summary": "Chinese tech giant Alibaba released what it says is its largest and \"most capable AI model to date,\" claiming performance rivaling the best systems from US frontier labs Anthropic and OpenAI, as well as domestic rivals like Moonshot AI's Kimi K3. Alibaba said it was making the model, Qwen3.8-Max, widely available to users in a [&#8230;]",
-      "published": "2026-08-03T05:31:11+00:00",
+      "published": "2026-08-03T11:01:11+00:00",
       "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/08/gettyimages-2266883826.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
+    },
+    {
+      "candidate_id": "adeb41b62ff44c468ff89f2adbe1a9547a033b9393bb993d26bcd41cf8aa6213",
+      "source_id": 1,
+      "source_name": "OpenAI News",
+      "priority": 6,
+      "title": "How we built a realtime system for responsive voice AI in six months",
+      "link": "https://openai.com/index/continuous-voice-interaction-with-gpt-live",
+      "summary": "GPT-Live enables continuous voice interaction with AI, using a turnless speech model and low-latency architecture for faster, more natural conversations.",
+      "published": "2026-08-03T07:00:00+00:00",
+      "image_url": null
     },
     {
       "candidate_id": "89677b702a9efce0e9c13c8d54772313ab71870891b87f81802889d33834be9f",
@@ -20,7 +31,18 @@
       "title": "Show HN: Product analytics (and evals) for agent sessions on your MCP",
       "link": "https://armature.tech/",
       "summary": "Hi HN! We’re Theodore and Louis, founders of Armature (YC P26). We reconstruct the entire session behind the MCP tool calls you receive, including what the user asked their agent to do and what the agent thought. You wrap your MCP in 3 lines of code (our SDK is available in Typescript, Python and Go) and start seeing in your dashboard: - All sessions reconstructed: it’s like reading the real conversation the user had inside Claude or ChatGPT! - A ranking of your MCP most popular use cases, built",
-      "published": "2026-08-03T10:47:59+00:00",
+      "published": "2026-08-03T16:17:59+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "f281a355503224dd002204b30cbe38f617584d77e4e0ee4c7517145202a62f01",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "I've let Opus 5 redo Opus 4.8's work from 1 month ago. And it failed over and over and over again while using all of my 20x tokens...",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1vepg4i/ive_let_opus_5_redo_opus_48s_work_from_1_month/",
+      "summary": "Mini backstory. I have a app running with 4 tools. Each of the 4 tools minus the UI is almost identical minus a few edge cases but nothing massive. Each app could only run one job at the same time I wanted to change that to parallel jobs so it runs faster for our users. To change the first first app to accept parallel jobs I used opus 4.8. It took Opus 4.8 with a bit of handholding about 4 hours to do it. No major problems, after the job I've let Fable 5 audit it's work and it found 2 small issu",
+      "published": "2026-08-03T20:46:07+00:00",
       "image_url": null
     },
     {
@@ -31,7 +53,7 @@
       "title": "PSA: if your suspension gets reversed, your payments may stay blocked — and the appeal form only works while you're still suspended. Failure from Support.",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vej190/psa_if_your_suspension_gets_reversed_your/",
       "summary": "Max 20x subscriber here, plus an API org on Console. Posting this because I think two of these are real bugs, not just me having a bad time, and I want to know if anyone else has hit them. The underlying problem In February my account was suspended for &quot;suspicious signals&quot; while I was using Claude Code normally. I appealed. Safeguards reversed it and reinstated me — explicitly saying it was a mistake. Twelve hours after reinstatement, my payments started failing. They have failed conti",
-      "published": "2026-08-03T11:23:45+00:00",
+      "published": "2026-08-03T16:53:45+00:00",
       "image_url": null
     },
     {
@@ -42,7 +64,7 @@
       "title": "What are people building?",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vej0mq/what_are_people_building/",
       "summary": "Every now and then, I see people complaining about Claude breaking when making long-term projects or being hyped about a new, cheaper model for more output. But these are my people—everyday laymen that are technologically inclined—not super tech savvy people in silicon valley (qualified with a few inevitable exceptions). So, what the hell are ya’ll building? What’s straining the Anthropic data centers and making them remove Fable 5 for pro users because there’s too many people doing long-term pr",
-      "published": "2026-08-03T11:23:09+00:00",
+      "published": "2026-08-03T16:53:09+00:00",
       "image_url": null
     },
     {
@@ -53,7 +75,7 @@
       "title": "Claude usage credit decreased when not using it",
       "link": "https://www.reddit.com/r/Anthropic/comments/1veiqqt/claude_usage_credit_decreased_when_not_using_it/",
       "summary": "I wanted to see if anyone else has run into this. I put $50 of usage credit into my Claude account to finish a task after maxing out my 20x plan. After I finished I had $3.01 left (it was at $3.01 since Friday). I didn’t use Claude at all after that. I checked again this morning, and now my balance is -$0.01. As far as I know, there weren’t any requests running in the background, and I definitely didn’t submit any new prompts during that time. Has anyone else had credit decrease while not using ",
-      "published": "2026-08-03T11:13:30+00:00",
+      "published": "2026-08-03T16:43:30+00:00",
       "image_url": null
     },
     {
@@ -64,7 +86,7 @@
       "title": "I cant pay for claude Max, the message \"payment failed\" keeps coming",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vegjai/i_cant_pay_for_claude_max_the_message_payment/",
       "summary": "I've tried with Safari and Chrome, claude app, the support chatbot, multiple cards, from my phone, on other wifi networks etc.. I've checked the name and the adress they are good, and when i try to pay it does this : -Creating your subscription… -Verifiying your payment -Payment failed. Please try again later. If the problem persists, contact support at https://support.anthropic.com/ I dont even have a record of it in my bank accounts Any advices ? I really need the paid claude plan to work, and",
-      "published": "2026-08-03T09:54:21+00:00",
+      "published": "2026-08-03T15:24:21+00:00",
       "image_url": null
     },
     {
@@ -75,19 +97,8 @@
       "title": "OK to delete \" 's Individual Organization\"?",
       "link": "https://www.reddit.com/r/Anthropic/comments/1veejz1/ok_to_delete_names_individual_organization/",
       "summary": "I have a company subscription for Claude but while setting things up I believe I must have accidentally set up a private subscription under my name. To avoid confusion I've tried to delete that account. Is that safe, or would it mess up the way I connect to my company account? I ask as I read horror stories about people losing that private account. I'm guessing that only affects individual users? &#32; submitted by &#32; /u/PotRotDot [link] &#32; [comments]",
-      "published": "2026-08-03T08:41:07+00:00",
+      "published": "2026-08-03T14:11:07+00:00",
       "image_url": null
-    },
-    {
-      "candidate_id": "d6849ed383734301aa19d0b23037d1e97102f16be0cec38276485f7da1d48735",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "OpenAI's unreleased Astra model solved 10 open math problems for $2,000 and shipped machine-checkable proofs",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vec80j/openais_unreleased_astra_model_solved_10_open/",
-      "summary": "OpenAI says an unreleased model, Astra, produced 10 new results in math and theoretical CS — problems open for at least a decade. Headline: the first explicit construction of a non-sofic group, open since 1999. The twist: every result ships with a Lean 4 certificate on GitHub, so correctness is verified by a compiler, not by trusting the lab. Total inference cost: ~$2,000 at API rates. This lands right after the Leiden Declaration warning AI labs bypass peer review and it's a direct answer: the ",
-      "published": "2026-08-03T07:06:25+00:00",
-      "image_url": "https://external-preview.redd.it/gsdorip7PuUMIAX87KLyXDkHObFlHMYhCFT5EJR7Nf8.png?width=640&crop=smart&auto=webp&s=43c49c3b8cf983dde39ad506612637c4a5c7a4ad"
     },
     {
       "candidate_id": "61e61c48d126b6934c733a6ef063ab23d3b8bd64bae627638517f1e87ee526a8",
@@ -97,73 +108,18 @@
       "title": "Moved back to ChatGPT",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vea7eq/moved_back_to_chatgpt/",
       "summary": "I moved back to ChatGPT for writing social media posts/scripts. Claude has stopped performing the way it used to a couple of months ago. Since the last crash, it has just gone down horribly. What are all your thoughts on this? PS: When I say writing. It's not from scratch. The ideation and initial story is all mine. I use LLMs to refine the structure and grammar of the scripts &#32; submitted by &#32; /u/InterestingScene9651 [link] &#32; [comments]",
-      "published": "2026-08-03T05:29:20+00:00",
+      "published": "2026-08-03T10:59:20+00:00",
       "image_url": null
     },
     {
-      "candidate_id": "6433df89fb2ba5eaad8b9b169ce25ddb5ab3f693ee5a0a70471d209e08b5534d",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
+      "candidate_id": "0ae5b9e5e076aaa67a61ea5820627d1f7b496ef6bbac3ece94e3ebb518a27ada",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
       "priority": 2,
-      "title": "Fix the \"You're doing things to quickly\"",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1velxik/fix_the_youre_doing_things_to_quickly/",
-      "summary": "Anyone else ending up routinely triggering the nanny prompt in ChatGPT about doing things too quickly and wanting you to take a break and come back? I'm doing totally manual things - copying and pasting from the chat window. It's super annoying and disruptive. OpenAI, if you're listening, can you recalibrate whatever criteria is setting this off? It's obviously too sensitive. This causing a problem for anyone else? &#32; submitted by &#32; /u/KnittedDrow [link] &#32; [comments]",
-      "published": "2026-08-03T13:07:17+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "676b4dea73cbbf6f50ae74869b4a2c6d4c7fa7159c36c145681542bb2aeef84f",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "KAT Coder 2.5 dev: Do yourself a favor and try it!",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1ve9r2q/kat_coder_25_dev_do_yourself_a_favor_and_try_it/",
-      "summary": "It is so good! I don't know why there aren't more people talking about it. Fewer tokens, faster and more accurate than Qwen 3.6 35b a3b. On my setup it's nearly as good as 27b, but 5x faster. And it completely trashes the Gemma 4 models. At least for my use case, it feels amazing. I'd love to hear other people's experience with it. If you want an actual measure of performance, I have a GitHub repo explaining how I tested it for my type of use case with a detailed performance comparison with othe",
-      "published": "2026-08-03T05:04:28+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "23dca52fd73f0311242058b6e54d525bd1f666abd0e1b7de4fab46743ed354cd",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "Alibaba Qwen Releases Qwen3.8-Max: A 2.4 Trillion Parameter MoE Model and the Most Capable One in the Qwen Family to Date",
-      "link": "https://www.marktechpost.com/2026/08/03/alibaba-qwen-releases-qwen3-8-max/",
-      "summary": "Alibaba's Qwen team moved Qwen3.8-Max from preview to general availability, with published per-token pricing and open weights due next week. The 2.4T parameter MoE model accepts text, image and video input across a 1M-token context. No benchmark table has been published. The post Alibaba Qwen Releases Qwen3.8-Max: A 2.4 Trillion Parameter MoE Model and the Most Capable One in the Qwen Family to Date appeared first on MarkTechPost .",
-      "published": "2026-08-03T02:54:16+00:00",
-      "image_url": "https://www.marktechpost.com/wp-content/uploads/2026/08/Screenshot-2026-08-03-at-12.56.57-AM-1.png"
-    },
-    {
-      "candidate_id": "6778c59a8183da66f065c43457dd39bdaf581f36269ab5152453b6b67511711a",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "GPT 5.6 Sol's oneshotting ability is impressive!",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vehlir/gpt_56_sols_oneshotting_ability_is_impressive/",
-      "summary": "I've been gathering oneshots of various models across prompts I found interesting on Reddit. Of all the models I've generated oneshots of, I liked GPT 5.6 Sol's aesthetics the most. See them at https://oneshotlm.com/model/openai-gpt-5-6-sol/ &#32; submitted by &#32; /u/kms_dev [link] &#32; [comments]",
-      "published": "2026-08-03T10:32:24+00:00",
-      "image_url": "https://preview.redd.it/7nnuv2ufn6hh1.png?width=140&height=122&auto=webp&s=e10528951daa33bc869ce00821c47b8a2c3b2743"
-    },
-    {
-      "candidate_id": "c842819874c47a929df190a3627b877ca6d1e554d8343bb86edc15662df550e9",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "Cogent AI Team Releases VR-1: A Frontier Cyber Reasoning Model That Composes and Verifies Enterprise Attack Paths",
-      "link": "https://www.marktechpost.com/2026/08/03/ogent-ai-team-releases-vr-1/",
-      "summary": "Cogent AI team released Cogent VR-1, a reasoning model post-trained specifically for cybersecurity rather than picking up cyber capability as a side effect of general coding strength. It ships with two companions: IntrusionBench, a benchmark that scores agents on completed enterprise intrusions, and the Cogent AI Harness, a governed runtime for security agents. The launch [&#8230;] The post Cogent AI Team Releases VR-1: A Frontier Cyber Reasoning Model That Composes and Verifies Enterprise Attac",
-      "published": "2026-08-03T01:58:14+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "a0ca12cd7c43ec5d987bf2b2a5e2a98349af69521dd149a387f4b730f40f044e",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "Planning to Run Ads on ChatGPT - Need suggestions",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1veg69g/planning_to_run_ads_on_chatgpt_need_suggestions/",
-      "summary": "I’m planning to run ads on ChatGPT to promote Microsoft Dynamics 365 implementation, consulting, and support services across India, the US, the UK, Australia, and other target markets. Before proceeding, I’d like to confirm whether ChatGPT is the right advertising platform for this type of B2B campaign. &#32; submitted by &#32; /u/narayanaSEO [link] &#32; [comments]",
-      "published": "2026-08-03T09:41:03+00:00",
+      "title": "Who’s in the Opus 4.6 club?",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1veoz8y/whos_in_the_opus_46_club/",
+      "summary": "I have given every model released since 4.6 a fair chance, but it has been full circle every time. Is it a skill issue? I don’t think so because I get what I need done with 4.6- I’m not on here complaining about that model, too. My prompts aren’t lacking any needed details or clarity, 4.6 gets the done done pretty close to the way I expect without any usual additions or token usage explosions. And I cannot say that about any other model. Opus 5 is especially the worst of all. It is incompetent, ",
+      "published": "2026-08-03T20:28:38+00:00",
       "image_url": null
     },
     {
@@ -174,30 +130,8 @@
       "title": "Passed the Claude Certified Architect - Professional",
       "link": "https://www.reddit.com/r/Anthropic/comments/1ve5liq/passed_the_claude_certified_architect_professional/",
       "summary": "Passed with an 897/1000 score. My background is security engineering with a specialization in data engineering, cloud, and ML. I recently moved into an AI security architect role where I'm building out my company's AI security offerings, and we're also working on progressing our Anthropic partnership. The exam was less technical than I expected. The questions still require solid technical knowledge of the Claude platform (API, SDK, MCP, Claude Code, Skills, RAG/chunking, prompt caching, context ",
-      "published": "2026-08-03T01:07:27+00:00",
+      "published": "2026-08-03T06:37:27+00:00",
       "image_url": null
-    },
-    {
-      "candidate_id": "d08834166b5d094b3c1906d37dac9b0706dbe68c23fb20aa248ada872d098763",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "Qwen3.8-Max matches Kimi K3 and DeepSeek V4 Flash",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1vellf2/qwen38max_matches_kimi_k3_and_deepseek_v4_flash/",
-      "summary": "Qwen3.8-Max (2.4T) is another massive contribution to the open weight community. On benchmarks, it performs closely to Kimi K3 and DeepSeek V4 flash across all categories and is better at coding and software tasks. Qwen3.8-27B will also be open weight soon too. Weights are being released next week. Pricing: Input: $2.0 / M tokens Output: $6.0 / M tokens Implicit Caching: $0.25 / M tokens &#32; submitted by &#32; /u/davidthesong [link] &#32; [comments]",
-      "published": "2026-08-03T12:55:12+00:00",
-      "image_url": "https://preview.redd.it/14mqdzhzb7hh1.png?width=640&crop=smart&auto=webp&s=53a5f1f5ea4dd8a66ef78591cbea34554cb1a2ed"
-    },
-    {
-      "candidate_id": "3e3e8ae66e6090dfe3f92268e603d2633c203e8c64730cf77843749f78d3e3f9",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "Is the app down?",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vee16e/is_the_app_down/",
-      "summary": "So I've been trying to run the ChatGPT app for a bit, and multiple errors are being thrown. Here is what's happening. Anybody else experiencing the same? &#32; submitted by &#32; /u/ParallelTrajectories [link] &#32; [comments]",
-      "published": "2026-08-03T08:21:04+00:00",
-      "image_url": "https://preview.redd.it/lxbxt51c06hh1.png?width=640&crop=smart&auto=webp&s=ccf6fee9215f0fc9c5f0bbd56c941131f7736d58"
     },
     {
       "candidate_id": "7121ba1199f61f307484d5b2053cdf1f1db4cd873385b9621a1df82931533e84",
@@ -207,7 +141,7 @@
       "title": "OpenAI takes the lead",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vedt2p/openai_takes_the_lead/",
       "summary": "&#32; submitted by &#32; /u/KeanuRave100 [link] &#32; [comments]",
-      "published": "2026-08-03T08:12:23+00:00",
+      "published": "2026-08-03T13:42:23+00:00",
       "image_url": "https://preview.redd.it/t02dttnry5hh1.png?width=640&crop=smart&auto=webp&s=d116fa2c709de88684cbc829b0f33629ece021c3"
     },
     {
@@ -217,20 +151,9 @@
       "priority": 3,
       "title": "MiniMax H3 Day-0 Support in ComfyUI: Open Weights, Native Audio, and 2K Video",
       "link": "https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui",
-      "summary": "Article URL: https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui Comments URL: https://news.ycombinator.com/item?id=49155629 Points: 204 # Comments: 58",
-      "published": "2026-08-03T08:04:43+00:00",
+      "summary": "Article URL: https://blog.comfy.org/p/minimax-h3-day-0-support-in-comfyui Comments URL: https://news.ycombinator.com/item?id=49155629 Points: 209 # Comments: 62",
+      "published": "2026-08-03T13:34:43+00:00",
       "image_url": null
-    },
-    {
-      "candidate_id": "f81f780cfc119cc53416addf7cf248c15c89720c499fad71c5a6d9d21e2c8e93",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "How much credits do we get in each plan?",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vecuh4/how_much_credits_do_we_get_in_each_plan/",
-      "summary": "Codex New Rate Card Recently, openAI updated their codex rate limits. I was curious how much ChatGPT Work limits do I get in each of the plan. As codex and ChatGPT work shares the same usage, I will be thankful if someone states how much credits do I get in each plan? (Free / Go / Plus / Pro5x / Pro20x) &#32; submitted by &#32; /u/Lucky_Creme_5208 [link] &#32; [comments]",
-      "published": "2026-08-03T07:33:36+00:00",
-      "image_url": "https://preview.redd.it/qrtrowehr5hh1.png?width=140&height=111&auto=webp&s=2c169e0216352ae3d93d6a03ab50628793182f1e"
     },
     {
       "candidate_id": "7b5648a93bde8d8d7740e4417d7d014f6abf78b364fd33f09190afd8506ac3e1",
@@ -240,29 +163,7 @@
       "title": "Most update-to-date best practices for blogs/posts for agent crawlers",
       "link": "https://www.reddit.com/r/Anthropic/comments/1venu6b/most_updatetodate_best_practices_for_blogsposts/",
       "summary": "Hi guys Figured I would ask here to give you a break from the complaints - does anyone happen to have the most up to date guidelines for ez parsing? I know H1/H2, bulleted lists, things of that nature Thank you in advance &#32; submitted by &#32; /u/dissentCS [link] &#32; [comments]",
-      "published": "2026-08-03T14:16:54+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "ad2e3cbc0425c592d2f077835be2d6425cf7796a514750361a8922178e29b728",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "We tested Deepseek v4 flash, GLM 5.2, and Kimi K3 on hard agentic tasks, and DeepSeek just crushed",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1venecp/we_tested_deepseek_v4_flash_glm_52_and_kimi_k3_on/",
-      "summary": "https://preview.redd.it/uybjxyypj7hh1.png?width=1200&amp;format=png&amp;auto=webp&amp;s=8293e8da332a14920b335caee52473762c09530d We just tested the big 3 of open-weight models on our internal evals. The tasks include long-running workflows involving multiple applications (Pagerduty, Gmail, HubSpot, Airtable, Slack, etc). Each task is scored by a fixed set of deterministic checks, and it passes only if every check passes. No points for partial success. To keep the test impartial, we used Pi Agent",
-      "published": "2026-08-03T14:00:18+00:00",
-      "image_url": "https://preview.redd.it/uybjxyypj7hh1.png?width=140&height=73&auto=webp&s=4790ebafe1f12ef984fdfb6b6c7de0dcaab9b5cd"
-    },
-    {
-      "candidate_id": "0575b8aa9a0e0b830fe6590cd2c2ad06c9260a8a16e853a373b38ea0173dad30",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "Speculative decoding with deepseek v4 flash 0731?",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1ven4f7/speculative_decoding_with_deepseek_v4_flash_0731/",
-      "summary": "Has anyone figured out how to enable speculative decoding with deepseek v4 flash 0731 on llamacpp? I’m on the right release for llamacpp (b10228 or earlier) and running am17an’s draft model with unsloth’s UD-Q8 model. Running into a lot of issues however. My llamacpp command: CUDA_DEVICE_ORDER=PCI_BUS_ID \\ ~/llama.cpp/build/bin/llama-server \\ --host 0.0.0.0 --port 8080 --alias AIPCmodel8080 \\ --device CUDA2,CUDA3,CUDA4 \\ -hf unsloth/DeepSeek-V4-Flash-0731-GGUF:Q8_K_XL \\ -np 1 \\ --temp 1.0 --top-",
-      "published": "2026-08-03T13:50:10+00:00",
+      "published": "2026-08-03T19:46:54+00:00",
       "image_url": null
     },
     {
@@ -273,19 +174,8 @@
       "title": "An AI-supervised remote exam went so badly that 58,000 students must retake it",
       "link": "https://arstechnica.com/culture/2026/08/an-ai-supervised-remote-exam-went-so-badly-that-58000-students-must-retake-it/",
       "summary": "Top scores increased by 5x.",
-      "published": "2026-08-03T13:30:50+00:00",
+      "published": "2026-08-03T19:00:50+00:00",
       "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/08/GettyImages-82955454-1152x648.jpg"
-    },
-    {
-      "candidate_id": "7afbb03422660a46264c9be6a11840c5238020f424e32125142b721a09ea53a7",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "AI9Stars released G9v3-39A5B",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1ve9eo3/ai9stars_released_g9v339a5b/",
-      "summary": "AI9Stars has released G9v3-39A5B an open weights language model designed to deliver even stronger reasoning capabilities than ai9stars/G9v3-3B with its 39B and 5 active experts. It is released under the Apache 2.0 license making it fully open for personal and commercial use It targets everyday assistant use, coding, tool-use workflows, and reasoning tasks, and supports both Think / No Think GITHUB: https://github.com/AI9Stars HF MODEL CARD: https://huggingface.co/ai9stars/G9v3-39A5B AA Intellige",
-      "published": "2026-08-03T04:45:33+00:00",
-      "image_url": null
     },
     {
       "candidate_id": "17cd7e7e3c7ff4990a197d979b2297169022fd0d93a69bdbca684161ed8d43ab",
@@ -295,30 +185,8 @@
       "title": "Europe’s AI labeling and transparency rules are now in effect",
       "link": "https://www.theverge.com/ai-artificial-intelligence/974571/eu-ai-act-transparency-labels-rules-deepfakes",
       "summary": "The European Union has ushered in some additional rules that aim to make it easier for people to identify chatbots and AI deepfakes online. The new transparency obligations under the bloc's landmark AI Act came into effect on August 2nd, requiring companies to disclose when people are interacting with AI models, and if content has [&#8230;]",
-      "published": "2026-08-03T12:08:45+00:00",
+      "published": "2026-08-03T17:38:45+00:00",
       "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/08/EU-AI-label-icons-hero.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
-    },
-    {
-      "candidate_id": "b7eed9f0f6b2591cdf40b666da2087c73f32e1550898ec4d983e5729e88a7410",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "The usage limit Reset dilemma",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1ve8o05/the_usage_limit_reset_dilemma/",
-      "summary": "While OpenAI’s unexpected usage limit resets on ChatGPT and Codex might seem like a bonus at first glance, they can actually backfire on users who carefully plan their work. If you strategically pace your prompt usage to keep 30% in reserve for the final day before your scheduled weekly reset, a surprise reset resets your entire seven-day timer right then and there. Instead of effectively getting 130% usage for that week your remaining 30% plus a fresh 100%, your original leftover allocation sim",
-      "published": "2026-08-03T04:04:16+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "868f3cce47a2af9e3315d6b8d0f2725777de21186680f7780e3f8656b2df9b40",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "How can I delete old cloud projects in Codex?",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vdzd0g/how_can_i_delete_old_cloud_projects_in_codex/",
-      "summary": "Post: I have several cloud projects that I created a long time ago, when Codex was first released, on another computer. I no longer use these projects and would like to delete them. However, I can’t find any option to delete or remove them. Unlike my current local projects, the old cloud projects don’t seem to have a menu or deletion option. Has anyone found a way to delete these old Codex cloud projects? Do I need to archive their tasks, disconnect the repositories, or contact OpenAI Support? h",
-      "published": "2026-08-02T19:47:29+00:00",
-      "image_url": "https://preview.redd.it/2wuyqxyt92hh1.png?width=140&height=74&auto=webp&s=9fda4a35f11174aa7de0965d5c1ce1784fdce1e6"
     },
     {
       "candidate_id": "f3d028c3324f2b5794c91754f15446362e99574a197318af00bd7148dfc59b87",
@@ -328,63 +196,8 @@
       "title": "Fable 5 actually found malware on my pc that saved my windows install",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vdxdzk/fable_5_actually_found_malware_on_my_pc_that/",
       "summary": "So... i noticed that my windows started freezing every so many seconds, and so i asked opus 5 earlier wether it could find out what the issue was, and couldn't find anything. 30 mins later, i asked fable 5, and within minutes it found a RAT by something i downloaded.. This sucks cuz now i gotta rotate alot of passwords and api keys, but boy oh boy am i glad that fable found this, cuz i would've never guessed it was malware. I am absolutely devestated, but from now on i'll only be using fable tha",
-      "published": "2026-08-02T18:17:47+00:00",
+      "published": "2026-08-02T23:47:47+00:00",
       "image_url": "https://preview.redd.it/a2l5nzhvt1hh1.png?width=640&crop=smart&auto=webp&s=0f654c1651bd9d53a1679e8b607f9e796b5d30b9"
-    },
-    {
-      "candidate_id": "2dc28d2354a72e3cf3c5d57403a27e4cde041a673154125d15712570a84010cc",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "Qwen3.8-max: 53 on AA index",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1venslg/qwen38max_53_on_aa_index/",
-      "summary": "Not too shabby, was expecting it to be better. Does roughly the same as glm 5.2 on coding indices, worse than kimi k3. More expensive though. https://artificialanalysis.ai/models/qwen3-8-max?intelligence=coding-index &#32; submitted by &#32; /u/_AnemicRoyalty_ [link] &#32; [comments]",
-      "published": "2026-08-03T14:15:16+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "8e973b05c3060958027e3c990221bf239e6c6e963150311c603246d07ef9ddd5",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "The reporters at this news site are AI bots. OpenAI’s super PAC appears to be funding it.",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1ve5rip/the_reporters_at_this_news_site_are_ai_bots/",
-      "summary": "&#32; submitted by &#32; /u/scrod [link] &#32; [comments]",
-      "published": "2026-08-03T01:16:56+00:00",
-      "image_url": "https://external-preview.redd.it/hvUrtciOBvFFtone8GSJrZuP4k9mRh_AVtysd8qsCEc.jpeg?width=640&crop=smart&auto=webp&s=e287e351f180ab56072faadb43654751efd25f95"
-    },
-    {
-      "candidate_id": "22ea5ba357e44d447b526080aef85bc33421195eb0fe770e2892c9c818980c1a",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "Investigators discover that more agents have escaped containment at OpenAI, per Reuters",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1ve5nwd/investigators_discover_that_more_agents_have/",
-      "summary": "&#32; submitted by &#32; /u/KeanuRave100 [link] &#32; [comments]",
-      "published": "2026-08-03T01:11:11+00:00",
-      "image_url": "https://preview.redd.it/917fqlhnv3hh1.png?width=640&crop=smart&auto=webp&s=d5cc20f9f503e060aa49d6b4b3cc7bbf35b14317"
-    },
-    {
-      "candidate_id": "bed563a9cbf77ff66dc3ceb98db356666e2820693f63d38d67fccb58f9b8ab54",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "Thermal paste PSA for old GPUs",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1vel82u/thermal_paste_psa_for_old_gpus/",
-      "summary": "I know many of us are using older GPUs like the 3090 because they work great. I just replaced the thermal paste and am seeing consistently 10 C lower temperatures. The old paste was cracking and like dry dust when I removed it. This made the difference between super loud fans and inaudible fans when running. Also, it's a cheap and quick thing to do. Don't break your cards though be careful. &#32; submitted by &#32; /u/nick_ziv [link] &#32; [comments]",
-      "published": "2026-08-03T12:42:02+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "6ec851e6fc46c8d7ca22493b27a8486c83a71dd7c45702eee2f7e131ac4a6eab",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "ChatGPT’s memory system .... Really?",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1ve54s4/chatgpts_memory_system_really/",
-      "summary": "ChatGPT’s memory system now feels completely incoherent Has anyone else run into this? ChatGPT can clearly retrieve a large amount of older saved legacy memory and prior conversational context. In long chats it will surface detailed decisions, exact artefact names and instructions from months ago, wonderful... Yet the moment I explicitly say, “save this small note to memory”, suddenly, it claims it does not have access to the memory-writing system. Really now? What makes this more ridiculous is ",
-      "published": "2026-08-03T00:40:41+00:00",
-      "image_url": "https://preview.redd.it/w16np30uo3hh1.gif?width=320&crop=smart&s=d26f7f1f12efaf305f1af98cc6199fce00cd34f0"
     },
     {
       "candidate_id": "3f4304cb48470de206ef64b7fa538e8ff616c61ed5771c8a2a8319561fd95dcf",
@@ -393,20 +206,9 @@
       "priority": 4,
       "title": "The Scariest Rescue Robot Ever Built (Meet \"Three Halves\")",
       "link": "https://www.youtube.com/shorts/SsNRQuLRz4Y",
-      "summary": "🔗 Join our WhatsApp Community Get the latest AI updates, tips, and insights straight to your inbox: https://join.switchit.app/YT -------- To Know More, Follow Vaibhav Sisinty On ⤵︎ Instagram @VaibhavSisinty https://www.instagram.com/vaibhavsisinty Twitter @VaibhavSisinty https://twitter.com/VaibhavSisinty Facebook @VaibhavSisinty https://www.facebook.com/vaibhavsisinty/ LinkedIn - Vaibhav Sisinty https://www.linkedin.com/in/vaibhavsisinty\n— transcript —\nWe are genuinely cooked, because what the hell is this? This is a new robot which is half human, half horse that will do dangerous work for you, and it looks like Satan. Like who actually is buying this? This is three halves. At first, it looks like a monster from a science fiction movie with horns, four legs, and arms carrying a chainsaw. But, it is actually being designed to protect people. Humans are still doing dangerous jobs like fighting [music] fires, searching through collapsed buildings, and working underground. Three halves is designed to replace them. The worker can stay someplace [music] safe and control the robot with a joystick. Now, here's why this robot looks so funny. The upper human body has detachable arms, so it [music] can carry chainsaws, drills, or air-powered tools. The robot can even send electricity or compressed air directly into those attachments. And the bottom half has four legs, so it gets it more balance. If the ground is broken, steep, or covered in debris, it can stay upright better than a person. Even the horns have a job. Inside them are cameras which help the robot watch its own arms and tools. So, if other sensors stop working, it still has another way to understand what its body is doing. Now, here is the really important part. Its safety system is not only software. If power fails or the motor stop working, brakes and locking pins can freeze the robot in place right away. [music] And if people need to stop it completely, they can even s…",
-      "published": "2026-08-03T04:23:49+00:00",
+      "summary": "🔗 Join our WhatsApp Community Get the latest AI updates, tips, and insights straight to your inbox: https://join.switchit.app/YT -------- To Know More, Follow Vaibhav Sisinty On ⤵︎ Instagram @VaibhavSisinty https://www.instagram.com/vaibhavsisinty Twitter @VaibhavSisinty https://twitter.com/VaibhavSisinty Facebook @VaibhavSisinty https://www.facebook.com/vaibhavsisinty/ LinkedIn - Vaibhav Sisinty https://www.linkedin.com/in/vaibhavsisinty",
+      "published": "2026-08-03T09:53:49+00:00",
       "image_url": "https://i4.ytimg.com/vi/SsNRQuLRz4Y/hqdefault.jpg"
-    },
-    {
-      "candidate_id": "bbe60329172bc145e2b561b7ffd251915f94d159e039188902e3708b3c767dd0",
-      "source_id": 11,
-      "source_name": "r/OpenAI",
-      "priority": 2,
-      "title": "I hear that a large portion of commenters on platforms like X are bots. Is it true for Reddit too?",
-      "link": "https://www.reddit.com/r/OpenAI/comments/1vejtl7/i_hear_that_a_large_portion_of_commenters_on/",
-      "summary": "*I hope not* &#32; submitted by &#32; /u/South_Onion927 [link] &#32; [comments]",
-      "published": "2026-08-03T11:51:29+00:00",
-      "image_url": null
     },
     {
       "candidate_id": "7df9529a9da5902f8278a8f3983e61995eb49ce23fe810f83a88244f9382b4c7",
@@ -416,7 +218,7 @@
       "title": "Massive Phantom Usage Bug draining Pro/Max plans (Card charged $480+). Zero support and Discord bans for asking.",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vdtir3/massive_phantom_usage_bug_draining_promax_plans/",
       "summary": "TL;DR: Anthropic's infrastructure suffered a severe routing loop/network collapse between July 29-31. Their backend is failing to recognize revoked OAuth tokens (&quot;Stale Token Bug&quot;), causing phantom usage to actively drain Pro and Max plan limits. My card was erroneously charged $480.11. Support takes 4 weeks to reply, and the official Discord bot bans you for talking about it. Check your billing limits. Hey everyone, I need to sound the alarm on a critical P0 infrastructure and billing",
-      "published": "2026-08-02T15:33:33+00:00",
+      "published": "2026-08-02T21:03:33+00:00",
       "image_url": null
     },
     {
@@ -427,19 +229,118 @@
       "title": "Dario Amodei is in a bind: OpenAI’s “Mythos” release could spell disaster for Fable’s current high-priced strategy",
       "link": "https://www.reddit.com/r/Anthropic/comments/1vdtc68/dario_amodei_is_in_a_bind_openais_mythos_release/",
       "summary": "&#32; submitted by &#32; /u/Borat_2020 [link] &#32; [comments]",
-      "published": "2026-08-02T15:26:25+00:00",
+      "published": "2026-08-02T20:56:25+00:00",
       "image_url": "https://preview.redd.it/dwbsxtn8z0hh1.png?width=640&crop=smart&auto=webp&s=43c222c1be7a986209868823d16e6b30c410aecf"
     },
     {
-      "candidate_id": "6efc83db083f6fe1052a950aaac718c9acbe9d2fb516fa27ee34653e093e9389",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
+      "candidate_id": "cd85d7771647dda0c7deceb1b9efa29b3c98b3088dff2984b83626bd6676521e",
+      "source_id": 17,
+      "source_name": "HN frontpage",
+      "priority": 3,
+      "title": "SQLite Critical CVEs or LLM Slop?",
+      "link": "https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/",
+      "summary": "Article URL: https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/ Comments URL: https://news.ycombinator.com/item?id=49154332 Points: 678 # Comments: 323",
+      "published": "2026-08-03T11:28:54+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "707191e4751c98e25bbddf487ed089c34f18df212d6ffc801def52cc4b62266b",
+      "source_id": 17,
+      "source_name": "HN frontpage",
+      "priority": 3,
+      "title": "AirLLM 70B inference with single 4GB GPU",
+      "link": "https://github.com/lyogavin/airllm",
+      "summary": "Article URL: https://github.com/lyogavin/airllm Comments URL: https://news.ycombinator.com/item?id=49154228 Points: 160 # Comments: 61",
+      "published": "2026-08-03T11:15:48+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "96532cb446870e646c231b3e7ff63d928119f4c2029957049d1325e5780d2c8b",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
       "priority": 2,
-      "title": "The Chinese labs everyone lumps together are making four pretty different bets. I work at one of them.",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1veipya/the_chinese_labs_everyone_lumps_together_are/",
-      "summary": "Every time a model drops from a Chinese lab the thread fills with people who already know who made it, and the guess is usually Alibaba. There was a thread here recently asking what separates the open source labs from the frontier labs. It ran to nearly sixty comments and hardly anyone in it separated out the labs on the open source side. They aren't one bloc and haven't been for a while. I work on the Ling models at Ant, so I'm one of the ones getting lumped in. Discount the paragraph about my ",
-      "published": "2026-08-03T11:12:42+00:00",
-      "image_url": "https://preview.redd.it/rlclj3bxu6hh1.png?width=640&crop=smart&auto=webp&s=8a538cc55b56a31afb0a5b56be59c05300eff072"
+      "title": "Opus 4.8 was way better.",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1vefbcb/opus_48_was_way_better/",
+      "summary": "Opus 5 had a simple task: run a task overnight and watch for issues in the run. &#32; submitted by &#32; /u/imrichie03 [link] &#32; [comments]",
+      "published": "2026-08-03T14:39:21+00:00",
+      "image_url": "https://preview.redd.it/amtbtqd686hh1.png?width=320&crop=smart&auto=webp&s=633668fb5c1b1154b2d3003154a77a810c121a14"
+    },
+    {
+      "candidate_id": "0ff6852475ed9e92904fbdbd1a780716aead374ec2015213b3e90deeb87e4969",
+      "source_id": 17,
+      "source_name": "HN frontpage",
+      "priority": 3,
+      "title": "Prevent cognitive debt by manually retyping LLM-generated code",
+      "link": "https://ankursethi.com/blog/prevent-cognitive-debt-by-manually-retyping-llm-generated-code/",
+      "summary": "Article URL: https://ankursethi.com/blog/prevent-cognitive-debt-by-manually-retyping-llm-generated-code/ Comments URL: https://news.ycombinator.com/item?id=49153374 Points: 328 # Comments: 272",
+      "published": "2026-08-03T09:32:07+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "54f6354c41451bcca976915061aeafa2f8e92fd668f5af6e8225d2bef82a3f56",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "My weekly credits reset on 3 PM. By 3:48 PM I had used 12% of my 5 hour usage but 4% of my weekly usage. I am on Max. I can't figure out how the math can make sense here? How can 12% of my 5 hour usag",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1vecjpu/my_weekly_credits_reset_on_3_pm_by_348_pm_i_had/",
+      "summary": "Is this a bug or something? Never had an issue like this before. The task I did was super simple as well. Are you seeing your credits being drained faster than previously, with weekly credits being consumed particularly fast relative to the 5 hour credits? &#32; submitted by &#32; /u/yrjokallinen [link] &#32; [comments]",
+      "published": "2026-08-03T12:51:03+00:00",
+      "image_url": "https://preview.redd.it/u22jq8gfp5hh1.png?width=640&crop=smart&auto=webp&s=e7498498443e2c20bcdd7245c5d28483a0d684e6"
+    },
+    {
+      "candidate_id": "984b32c455e0bcc1284738170fa09bd16916fe87c20914fc176f670062c67843",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "Wake up babe new benchmark just dropped",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1vebowy/wake_up_babe_new_benchmark_just_dropped/",
+      "summary": "&#32; submitted by &#32; /u/KeanuRave100 [link] &#32; [comments]",
+      "published": "2026-08-03T12:12:39+00:00",
+      "image_url": "https://preview.redd.it/8c79rlyli5hh1.png?width=640&crop=smart&auto=webp&s=7f20b1fe145bb0d4012359ace799a8d5fcf49b9b"
+    },
+    {
+      "candidate_id": "a58ba426bd11f62e4c3b37cb990919c9896c3c5ac5cea675b2422a4bc72ac82d",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "Woah! Opus 5 says sorry.",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1ve87ol/woah_opus_5_says_sorry/",
+      "summary": "https://preview.redd.it/tyfcfdwsl4hh1.png?width=562&amp;format=png&amp;auto=webp&amp;s=d4d1cd0838debdcb0afd010e4a47486b779a89fd Learned that Opus 5 is encouraged to apologise. &#32; submitted by &#32; /u/GM_bor_panda [link] &#32; [comments]",
+      "published": "2026-08-03T09:08:17+00:00",
+      "image_url": "https://preview.redd.it/tyfcfdwsl4hh1.png?width=140&height=16&auto=webp&s=fb42f497dd51f5ecc20ad91d5d841a16792a0c61"
+    },
+    {
+      "candidate_id": "d187ea697c9592784a85d47630792bca28a61327599392801999377dc4c28df1",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "Opus 4.8 > 5",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1ve4my7/opus_48_5/",
+      "summary": "I've tried, but it is simply too much struggle dealing with 5. The constant second guessing, backpedaling, apologizing, forgetting, pontificating...tf &#32; submitted by &#32; /u/seoulsrvr [link] &#32; [comments]",
+      "published": "2026-08-03T05:43:41+00:00",
+      "image_url": null
+    },
+    {
+      "candidate_id": "88b8e6ba1ccf96da89d346174cb9fbf1f0dfeb311cc589e514890ec45df4e21e",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "NEVER EVER DO THIS! I just lost FIVE HOURS of work over this!",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1ve147h/never_ever_do_this_i_just_lost_five_hours_of_work/",
+      "summary": "&#32; submitted by &#32; /u/Parogarr [link] &#32; [comments]",
+      "published": "2026-08-03T02:41:29+00:00",
+      "image_url": "https://preview.redd.it/ckffydluo2hh1.png?width=640&crop=smart&auto=webp&s=455ad65ef0c6eed9dc5f889130e64c158f35b594"
+    },
+    {
+      "candidate_id": "2f371d104be5201cfcf6101f707301990a85be64b11d4a452692c49ab0b0886a",
+      "source_id": 9,
+      "source_name": "r/Anthropic",
+      "priority": 2,
+      "title": "Made a Opus 5 skill that one shots card stock animation videos like this one. Would appreciate any feedback.",
+      "link": "https://www.reddit.com/r/Anthropic/comments/1vdphz1/made_a_opus_5_skill_that_one_shots_card_stock/",
+      "summary": "&#32; submitted by &#32; /u/notNIHAL [link] &#32; [comments]",
+      "published": "2026-08-02T18:26:07+00:00",
+      "image_url": "https://external-preview.redd.it/bG9senA2Mmo4MGhoMR9oPcasXfwddVWqUjUtN9phmYWO4wk_Qot5MWAxCakV.png?width=320&crop=smart&auto=webp&s=179c7bcee166deb6e4568949784741f444449df8"
     }
   ]
 }
