@@ -7,10 +7,12 @@
 <title>AI Digest Control Desk</title>
 <!--
   ============================================================================
-  AI Digest Control Desk — Phase 4 / Task 13 (STEP 19 backend, STEP 20 frontend)
+  AI Digest Control Desk — Phase 4 / Task 13
+  STEP 19 backend · STEP 20 first frontend · STEP 21 UI rebuild
   ============================================================================
   Vanilla HTML + CSS + JS. Zero runtime dependencies. No frameworks, no CDN,
-  no analytics. Works on file://, http://localhost, and GitHub Pages.
+  no analytics. Works on http://localhost and GitHub Pages.
+  (file:// cannot fetch candidates.json — serve the folder over HTTP.)
 
   DESIGN NOTE (Newsroom Terminal)
   ----------------------------------------------------------------------------
@@ -23,39 +25,77 @@
     alert    #f85149  red — errors, destructive actions
   Type roles (2, system stack only — no CDN fonts):
     sans  -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial
-           Used for headlines, body copy, buttons. Differentiated by weight
-           (400/600) and size, never by font family.
+           Headlines, body copy, buttons. Differentiated by weight and size,
+           never by font family.
     mono  ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas
-           Used for DATA: timestamps, source labels, candidate metadata,
-           the Preview JSON. Signals "this is machine output, not prose."
+           DATA: timestamps, source labels, counters, the Preview JSON.
+           Signals "this is machine output, not prose."
   Signature element:
     Numbered selection badges — circular chips with a monospace digit. When a
-    story is selected, its badge fills with signal green and casts a soft glow
-    (disabled under prefers-reduced-motion). The digit reflects Harvey's
-    chosen sequence (1..5). Everything else on the page is deliberately quiet
-    so the badges are the single visual anchor of the selection state.
+    story is selected its badge fills with signal green and casts a soft glow
+    (disabled under prefers-reduced-motion). The digit is Harvey's chosen
+    sequence (1..5). Everything else is deliberately quiet so the badges are
+    the single visual anchor of selection state.
+
+  STEP 21 — what changed and why
+  ----------------------------------------------------------------------------
+  The page had five unlabelled sections with 11px muted headings: no visible
+  sequence, no way to tell what to do next or whether you were done. It also
+  had no way to OPEN a story before picking it. Rebuild:
+    - Explicit 5-step flow. Sticky step rail (plain anchor links, no JS
+      navigation) + numbered <h2> step headers, each with a one-line
+      explainer and a live status on the right.
+    - Settings moved into the header as a dropdown disclosure.
+    - Story cards: real cards with an "open article" link as a SIBLING of the
+      label (inside the label it would toggle the checkbox).
+    - Six fixes, listed below.
+
+  FIXES (STEP 21)
+  ----------------------------------------------------------------------------
+  FIX 21a  #toast[aria-live]{pointer-events:auto} always matched and beat the
+           base pointer-events:none, parking an invisible click-blocking box
+           over the centre of the sticky Generate button. Rule deleted.
+  FIX 21b  .story-check is position:absolute; with no positioned ancestor it
+           resolved against the initial containing block, so tabbing into the
+           list yanked scroll to page top. article.story is now position:relative.
+  FIX 21c  A picked image could outlive its story: toggleStory() cleared a
+           stale image.storyId but onCustomInput() (which pops selections when
+           the cap shrinks 5→4) and fetchCandidates() did not — so the payload
+           could ship an image_url for a story absent from story_ids. One
+           syncImageSelection() guard, called by all three.
+  FIX 21d  saveSettings() only ever setItem'd the token, so clearing the field
+           and saving left gh_token in localStorage. Now symmetric.
+  FIX 21e  At cap, unselected rows were disabled — removed from the tab order
+           entirely. Rows stay focusable; toggleStory() explains the cap instead.
+  FIX 21f  networkErrMsg(e) ignored its argument; it now reports the real cause.
 
   ACCESSIBILITY
   ----------------------------------------------------------------------------
-  - All form controls have associated <label> elements.
-  - Keyboard-focusable: Tab cycles through interactive elements in source
-    order; visible focus ring (2px accent outline) on every focusable element.
-  - Touch targets >= 44x44 px (checkboxes, buttons, radio cards).
-  - prefers-reduced-motion: all glow/pulse/transition disabled.
-  - ARIA live region on the toast container for screen readers.
-  - Color contrast: ink (#e6edf3) on bg (#0e1116) = 14.8:1 (WCAG AAA);
-    muted (#7d8590) on bg = 4.6:1 (WCAG AA).
+  - Skip link to the story list. All form controls have associated <label>s.
+  - Heading levels are contiguous (h1 → five h2s); the story section used to
+    have no heading at all.
+  - Keyboard: Tab follows source order; visible focus ring on every focusable
+    element, including the visually-hidden story checkbox (ring renders on its
+    badge via :focus-within).
+  - Touch targets >= 44px on buttons and story rows (badges are 40px but sit
+    inside a full-width 44px+ row label).
+  - aria-live="polite" on the toast, the cap notice and the refresh status.
+  - The image radios are grouped in a <fieldset> with a screen-reader legend.
+  - The Generate button is wired to its hint via aria-describedby.
+  - prefers-reduced-motion: all glow/transition disabled.
+  - Contrast: ink #e6edf3 on bg #0e1116 = 14.8:1 (AAA);
+    muted #7d8590 on bg = 4.6:1 (AA).
 
   SECURITY / TOKEN HANDLING
   ----------------------------------------------------------------------------
   The GitHub PAT lives ONLY in:
-    1. localStorage (key: 'gh_token') — set by the Save button, cleared by
-       Forget token, never auto-committed anywhere.
+    1. localStorage (key: 'gh_token') — written by Save, removed by Forget
+       token or by saving an empty field.
     2. The Authorization: Bearer <token> header on dispatch POSTs to
        https://api.github.com (HTTPS only).
   It is NEVER: logged, put in a URL query string, written to the DOM as text,
   echoed back in any response handler, or sent to any origin other than
-  api.github.com. The input is type="password" (masked). Test 5 (grep) verifies.
+  api.github.com. The input is type="password" (masked).
   ============================================================================
 -->
 <style>
@@ -63,7 +103,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-family: var(--sans);
     font-size: 15px;
     line-height: 1.5;
     color: var(--ink);
@@ -75,86 +115,101 @@
   button { cursor: pointer; background: none; border: none; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  fieldset { border: none; }
 
   /* ---------- design tokens ---------- */
   :root {
     --bg: #0e1116;
     --surface: #171b22;
     --surface-hover: #1c2230;
+    --surface-2: #11151c;
     --border: #2d333b;
-    --border-active: #3fb950;
     --ink: #e6edf3;
     --muted: #7d8590;
     --accent: #3fb950;
     --accent-dim: #2ea043;
     --accent-glow: rgba(63, 185, 80, 0.35);
+    --accent-wash: rgba(63, 185, 80, 0.06);
     --alert: #f85149;
     --alert-dim: #da3633;
+    --alert-wash: rgba(248, 81, 73, 0.10);
     --radius: 6px;
+    --radius-lg: 10px;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.5);
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Consolas, monospace;
     --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
     --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
   }
 
+  /* ---------- utility ---------- */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  }
+  .skip {
+    position: absolute; left: 16px; top: -60px;
+    background: var(--accent); color: var(--bg);
+    padding: 10px 16px; border-radius: var(--radius);
+    font-weight: 600; z-index: 200;
+    transition: top 0.15s;
+  }
+  .skip:focus { top: 12px; text-decoration: none; }
+
   /* ---------- layout ---------- */
   .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
 
+  /* ---------- STEP 21: header + settings dropdown ---------- */
   header.site {
-    padding: 28px 0 16px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 24px;
+    background: var(--surface-2);
   }
-  header.site h1 {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-  header.site .tag {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 4px;
-    letter-spacing: 0.02em;
-  }
-  header.site .dot {
-    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accent); margin-right: 6px; vertical-align: 1px;
-  }
-
-  section { margin-bottom: 28px; }
-  section > h2 {
-    font-size: 11px;
-    font-family: var(--mono);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-    margin-bottom: 12px;
-    font-weight: 500;
-  }
-
-  /* ---------- settings strip ---------- */
-  details.strip {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0;
-    margin-bottom: 24px;
-  }
-  details.strip > summary {
-    padding: 14px 16px;
-    font-weight: 600;
-    cursor: pointer;
-    list-style: none;
+  .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 16px;
+    padding-top: 18px;
+    padding-bottom: 18px;
   }
+  .topbar h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .topbar .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); margin-right: 7px; vertical-align: 1px;
+  }
+
+  details.strip { position: relative; flex: none; }
+  details.strip > summary {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 12px;
+    min-height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+    white-space: nowrap;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  details.strip > summary:hover { background: var(--surface-hover); border-color: var(--muted); }
+  details.strip > summary:focus-visible { box-shadow: var(--focus-ring); }
   details.strip > summary::-webkit-details-marker { display: none; }
   details.strip > summary::after {
-    content: '▾';
-    color: var(--muted);
-    font-size: 12px;
-    transition: transform 0.15s;
+    content: '▾'; color: var(--muted); font-size: 11px; transition: transform 0.15s;
   }
   details.strip[open] > summary::after { transform: rotate(180deg); }
   details.strip > summary .status {
@@ -162,10 +217,25 @@
     font-size: 11px;
     color: var(--muted);
     font-weight: 400;
-    margin-right: 12px;
   }
   details.strip > summary .status.ok { color: var(--accent); }
-  details.strip > .body { padding: 0 16px 16px; }
+  details.strip > .panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    width: min(420px, calc(100vw - 32px));
+    z-index: 80;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-2);
+    padding: 16px;
+  }
+  @media (max-width: 640px) {
+    .topbar { flex-wrap: wrap; }
+    details.strip { width: 100%; }
+    details.strip > .panel { right: auto; left: 0; width: 100%; }
+  }
 
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 540px) { .grid2 { grid-template-columns: 1fr; } }
@@ -177,13 +247,13 @@
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
   input[type="text"], input[type="password"], textarea {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius);
     padding: 10px 12px;
     color: var(--ink);
     font-family: var(--mono);
@@ -191,24 +261,26 @@
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  input:focus, textarea:focus {
+  input:focus-visible, textarea:focus-visible {
     border-color: var(--accent);
     box-shadow: var(--focus-ring);
   }
   input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.6; }
+  .field-group { margin-bottom: 12px; }
+  .field-group:last-child { margin-bottom: 0; }
 
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
 
   .btn {
     padding: 9px 14px;
-    border-radius: 4px;
+    border-radius: var(--radius);
     font-size: 13px;
     font-weight: 500;
     border: 1px solid var(--border);
     background: var(--surface);
     color: var(--ink);
     transition: background 0.12s, border-color 0.12s, opacity 0.12s;
-    min-height: 38px;
+    min-height: 44px;                       /* STEP 21: was 38, below the 44px target */
   }
   .btn:hover:not(:disabled) { background: var(--surface-hover); border-color: var(--muted); }
   .btn:focus-visible { box-shadow: var(--focus-ring); }
@@ -216,17 +288,135 @@
   .btn.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: var(--bg); font-weight: 600; }
   .btn.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
   .btn.danger { color: var(--alert); border-color: var(--border); }
-  .btn.danger:hover:not(:disabled) { background: rgba(248,81,73,0.1); border-color: var(--alert-dim); }
+  .btn.danger:hover:not(:disabled) { background: var(--alert-wash); border-color: var(--alert-dim); }
 
   .note {
     font-size: 12px;
     color: var(--muted);
     line-height: 1.45;
-    margin-top: 10px;
-    padding: 8px 10px;
-    background: rgba(63,185,80,0.04);
+    margin-top: 12px;
+    padding: 9px 11px;
+    background: var(--accent-wash);
     border-left: 2px solid var(--accent);
-    border-radius: 2px;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  /* ---------- STEP 21: sticky step rail ---------- */
+  nav.steprail {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .rail-inner {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .rail-inner::-webkit-scrollbar { display: none; }
+  a.rail-step {
+    flex: 1 1 0;
+    min-width: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 6px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  a.rail-step:hover { background: var(--surface); color: var(--ink); text-decoration: none; }
+  a.rail-step:focus-visible { box-shadow: var(--focus-ring); }
+  a.rail-step .rn {
+    flex: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  a.rail-step.done { color: var(--ink); }
+  a.rail-step.done .rn {
+    background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600;
+  }
+  a.rail-step.current {
+    color: var(--accent);
+    border-color: var(--border);
+    background: var(--surface);
+  }
+  a.rail-step.current .rn { border-color: var(--accent); color: var(--accent); }
+  a.rail-step.current.done .rn { color: var(--bg); }
+  @media (max-width: 540px) {
+    a.rail-step { font-size: 11px; gap: 5px; padding: 8px 3px; min-width: 56px; }
+    a.rail-step .rn { width: 18px; height: 18px; font-size: 10px; }
+  }
+
+  /* ---------- STEP 21: numbered step sections ---------- */
+  main { padding-top: 28px; }
+  section.step { margin-bottom: 34px; scroll-margin-top: 60px; }
+  .step-h {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .step-n {
+    flex: none;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    background: var(--accent-wash);
+  }
+  .step-opt {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-weight: 400;
+  }
+  .step-s {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .step-s b { color: var(--ink); font-weight: 600; }
+  .step-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 14px 36px;
+    line-height: 1.45;
+  }
+  @media (max-width: 540px) {
+    .step-h { flex-wrap: wrap; gap: 8px; font-size: 15px; }
+    .step-s { margin-left: auto; }
+    .step-sub { margin-left: 0; }
   }
 
   /* ---------- refresh row ---------- */
@@ -237,64 +427,66 @@
     flex-wrap: wrap;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 12px 14px;
   }
-  .refresh-row .ts {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    margin-left: auto;
-  }
-  @media (max-width: 540px) { .refresh-row .ts { margin-left: 0; width: 100%; } }
   .status-line {
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--muted);
-    margin-top: 8px;
+    margin-top: 10px;
     font-family: var(--mono);
+    line-height: 1.45;
   }
+  .status-line:empty { display: none; }
   .status-line.ok { color: var(--accent); }
   .status-line.err { color: var(--alert); }
 
   /* ---------- story list ---------- */
-  .meta-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .meta-bar .count { color: var(--ink); }
-
   ul.stories { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 
   article.story {
-    display: grid;
-    grid-template-columns: 44px 1fr;       /* default: badge + body (no thumb) */
-    gap: 12px;
+    position: relative;                    /* FIX 21b: contains the absolute .story-check */
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 12px;
+    box-shadow: var(--shadow-1);
     transition: border-color 0.15s, background 0.15s;
   }
-  article.story.has-thumb {
-    grid-template-columns: 44px 64px 1fr;  /* badge + thumb + body when image present */
-  }
+  article.story:hover { border-color: var(--muted); background: var(--surface-hover); }
   article.story.selected {
     border-color: var(--accent);
-    background: rgba(63,185,80,0.04);
+    background: var(--accent-wash);
   }
-  @media (max-width: 540px) {
-    article.story { grid-template-columns: 36px 1fr; gap: 8px; padding: 10px; }
-    article.story.has-thumb { grid-template-columns: 36px 52px 1fr; }
+  .story-row-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .story-row-label:focus-within .badge { box-shadow: var(--focus-ring); }
+  .story-row-label:focus-within .badge.active {
+    box-shadow: var(--focus-ring), 0 0 14px var(--accent-glow);
+  }
+
+  /* visually hidden checkbox — the badge IS the visual, but it stays focusable */
+  .story-check {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 
   /* signature element: numbered selection badge */
   .badge {
-    width: 36px; height: 36px;
+    flex: none;
+    width: 40px; height: 40px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-family: var(--mono);
@@ -304,44 +496,56 @@
     color: var(--muted);
     border: 1.5px solid var(--border);
     transition: all 0.18s ease;
-    align-self: center;
   }
+  .badge::after { content: '+'; font-size: 15px; opacity: 0.55; }
+  .badge.active::after { content: none; }
   .badge.active {
     background: var(--accent);
     color: var(--bg);
     border-color: var(--accent);
     box-shadow: 0 0 14px var(--accent-glow);
   }
-  .badge.disabled { opacity: 0.3; }
-  @media (max-width: 540px) { .badge { width: 30px; height: 30px; font-size: 12px; } }
+  article.story:hover .badge:not(.active) { border-color: var(--muted); color: var(--ink); }
+  @media (max-width: 540px) { .badge { width: 34px; height: 34px; font-size: 13px; } }
 
   .thumb {
+    flex: none;
     width: 64px; height: 64px;
-    border-radius: 4px;
+    border-radius: var(--radius);
     background: var(--bg);
     border: 1px solid var(--border);
     object-fit: cover;
-    align-self: center;
   }
-  @media (max-width: 540px) { .thumb { width: 52px; height: 52px; } }
+  @media (max-width: 540px) { .thumb { width: 48px; height: 48px; } }
 
-  .story-body { min-width: 0; }
+  .story-body { min-width: 0; flex: 1 1 auto; }
   .story-title {
     font-size: 15px;
     font-weight: 600;
     line-height: 1.35;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     color: var(--ink);
   }
-  article.story.selected .story-title { color: var(--ink); }
   .story-meta {
     font-family: var(--mono);
     font-size: 11px;
     color: var(--muted);
     letter-spacing: 0.02em;
     margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
-  .story-meta .src { color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  .story-meta .src {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--accent-wash);
+    border: 1px solid var(--accent-dim);
+    border-radius: 3px;
+    padding: 1px 6px;
+  }
   .story-meta time { cursor: help; }
   .story-summary {
     font-size: 13px;
@@ -353,44 +557,52 @@
     overflow: hidden;
   }
 
-  /* invisible checkbox overlay — the badge IS the visual */
-  .story-check {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
+  /* STEP 21: open-article link — sibling of the label so it never toggles it */
+  a.open {
+    flex: none;
+    align-self: center;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1;
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
   }
-  .story-row-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    user-select: none;
+  a.open:hover {
+    color: var(--accent);
+    background: var(--bg);
+    border-color: var(--border);
+    text-decoration: none;
   }
-  .story-row-label:focus-within .badge {
-    box-shadow: var(--focus-ring);
-  }
-  .story-row-label:focus-within .badge.active {
-    box-shadow: var(--focus-ring), 0 0 14px var(--accent-glow);
-  }
+  a.open:focus-visible { box-shadow: var(--focus-ring); }
 
-  /* ---------- empty state ---------- */
+  /* ---------- empty / loading state ---------- */
   .empty {
     text-align: center;
-    padding: 40px 20px;
+    padding: 36px 20px;
     color: var(--muted);
     font-size: 14px;
+    line-height: 1.5;
     background: var(--surface);
     border: 1px dashed var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
   }
+  .empty strong { display: block; color: var(--ink); font-size: 15px; margin-bottom: 6px; }
+  .empty.err { border-color: var(--alert-dim); background: var(--alert-wash); }
+  .empty.err strong { color: var(--alert); }
 
-  /* ---------- cap warning ---------- */
+  /* ---------- cap notice ---------- */
   .cap-warn {
     font-family: var(--mono);
     font-size: 12px;
     color: var(--alert);
-    margin-top: 8px;
+    background: var(--alert-wash);
+    border: 1px solid var(--alert-dim);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    margin-bottom: 10px;
     display: none;
   }
   .cap-warn.show { display: block; }
@@ -399,13 +611,11 @@
   .custom-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 14px;
   }
-  .custom-card.active { border-color: var(--accent); }
-  .custom-head {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
-  }
+  .custom-card.active { border-color: var(--accent); background: var(--accent-wash); }
+  .custom-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
   .chip {
     font-family: var(--mono);
     font-size: 10px;
@@ -413,12 +623,11 @@
     letter-spacing: 0.1em;
     padding: 3px 7px;
     border-radius: 3px;
-    background: rgba(63,185,80,0.15);
+    background: var(--accent-wash);
     color: var(--accent);
     border: 1px solid var(--accent-dim);
   }
-  .custom-card .field-group { margin-bottom: 10px; }
-  .custom-card .field-group:last-child { margin-bottom: 0; }
+  .custom-head .hint { font-size: 12px; color: var(--muted); font-family: var(--mono); }
 
   /* ---------- image picker ---------- */
   .img-options {
@@ -430,68 +639,85 @@
   .img-opt {
     position: relative;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     cursor: pointer;
     background: var(--surface);
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, background 0.15s;
     min-height: 60px;
   }
-  .img-opt:hover { border-color: var(--muted); }
+  .img-opt:hover { border-color: var(--muted); background: var(--surface-hover); }
   .img-opt.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .img-opt img {
-    display: block; width: 100%; height: 90px; object-fit: cover; background: var(--bg);
-  }
+  .img-opt:focus-within { box-shadow: var(--focus-ring); }
+  .img-opt img { display: block; width: 100%; height: 90px; object-fit: cover; background: var(--bg); }
   .img-opt .label {
-    padding: 6px 8px;
+    padding: 7px 9px;
     font-family: var(--mono);
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--muted);
     border-top: 1px solid var(--border);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .img-opt.selected .label { color: var(--accent); }
   .img-opt input[type="radio"] {
-    position: absolute; top: 6px; right: 6px; width: 16px; height: 16px;
+    position: absolute; top: 7px; right: 7px; width: 16px; height: 16px;
     accent-color: var(--accent);
   }
-  .img-opt.none {
-    display: flex; align-items: center; justify-content: center;
+  /* the two synthetic options are plain rows, not thumbnails */
+  .img-opt.plain {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 90px;
     font-family: var(--mono); font-size: 11px;
     text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--muted);
+    padding: 8px;
+    text-align: center;
   }
+  .img-opt.plain.selected { color: var(--accent); }
+  .img-opt.plain input[type="radio"] { position: static; margin: 0; }
   .img-preview {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 12px;
     min-height: 80px;
     display: flex; align-items: center; gap: 14px;
   }
-  .img-preview img { max-width: 120px; max-height: 90px; border-radius: 4px; }
+  .img-preview img { max-width: 120px; max-height: 90px; border-radius: var(--radius); }
   .img-preview .pv-label {
     font-family: var(--mono); font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.06em;
+    letter-spacing: 0.04em; word-break: break-all;
   }
 
   /* ---------- preview JSON ---------- */
+  details.preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0 14px;
+  }
   details.preview > summary {
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     color: var(--muted);
     cursor: pointer;
-    padding: 8px 0;
+    padding: 12px 0;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    list-style: none;
   }
+  details.preview > summary::-webkit-details-marker { display: none; }
+  details.preview > summary::before { content: '▸ '; }
+  details.preview[open] > summary::before { content: '▾ '; }
+  details.preview > summary:focus-visible { box-shadow: var(--focus-ring); border-radius: 3px; }
   pre.json {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 12px;
+    margin-bottom: 14px;
     font-family: var(--mono);
     font-size: 12px;
     line-height: 1.5;
@@ -505,9 +731,9 @@
   .generate-section {
     position: sticky;
     bottom: 0;
-    background: linear-gradient(to top, var(--bg) 70%, transparent);
-    padding: 20px 0 0;
-    margin-top: 32px;
+    background: linear-gradient(to top, var(--bg) 72%, transparent);
+    padding: 20px 0 12px;
+    margin-top: 16px;
   }
   .generate-btn {
     display: block;
@@ -518,7 +744,7 @@
     background: var(--accent-dim);
     color: var(--bg);
     border: 1px solid var(--accent-dim);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     transition: background 0.15s, transform 0.1s;
     min-height: 52px;
   }
@@ -534,9 +760,8 @@
     font-size: 11px;
     color: var(--muted);
     text-align: center;
-    margin-top: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    margin-top: 10px;
+    letter-spacing: 0.04em;
   }
 
   /* ---------- toast ---------- */
@@ -547,26 +772,26 @@
     transform: translateX(-50%) translateY(20px);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     padding: 12px 18px;
     font-size: 14px;
     max-width: 90vw;
     opacity: 0;
-    pointer-events: none;
+    pointer-events: none;      /* FIX 21a: no override — it must never eat clicks */
     transition: opacity 0.25s, transform 0.25s;
     z-index: 100;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    box-shadow: var(--shadow-2);
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   #toast.ok { border-color: var(--accent); }
   #toast.err { border-color: var(--alert); }
-  #toast[aria-live] { pointer-events: auto; }
 
   /* ---------- reduced motion ---------- */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       transition: none !important;
       animation: none !important;
+      scroll-behavior: auto !important;
     }
     .badge.active { box-shadow: none; }
     #toast { transition: opacity 0.1s; }
@@ -574,82 +799,124 @@
 </style>
 </head>
 <body>
+
+<a class="skip" href="#step2">Skip to story selection</a>
+
+<!-- ========== HEADER + SETTINGS (STEP 21) ========== -->
 <header class="site">
-  <div class="wrap">
-    <h1><span class="dot"></span>AI Digest Control Desk</h1>
-    <div class="tag">manual override &mdash; daily auto-flow untouched</div>
+  <div class="wrap topbar">
+    <div>
+      <h1><span class="dot"></span>AI Digest Control Desk</h1>
+      <div class="tag">manual override &mdash; daily auto-flow untouched</div>
+    </div>
+
+    <details class="strip" id="settings">
+      <summary>
+        <span>Settings</span>
+        <span class="status" id="settingsStatus">not configured</span>
+      </summary>
+      <div class="panel">
+        <div class="grid2">
+          <div>
+            <label class="field" for="owner">Owner</label>
+            <input type="text" id="owner" placeholder="harvey" autocomplete="off" spellcheck="false">
+          </div>
+          <div>
+            <label class="field" for="repo">Repository</label>
+            <input type="text" id="repo" placeholder="linkedin-ai-digest" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="field-group" style="margin-top:12px;">
+          <label class="field" for="branch">Default branch</label>
+          <input type="text" id="branch" placeholder="main" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="field-group">
+          <label class="field" for="token">GitHub PAT (fine-grained)</label>
+          <input type="password" id="token" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="row">
+          <button class="btn primary" id="saveSettings" type="button">Save settings</button>
+          <button class="btn danger" id="forgetToken" type="button">Forget token</button>
+        </div>
+        <p class="note">
+          Use a <strong>fine-grained PAT</strong> scoped to this repository only, with
+          just <strong>Actions: write</strong> and <strong>Contents: read</strong>.
+          Do not paste a classic token or one with broader scopes &mdash; it lives in
+          this browser's localStorage on this device. The token is sent only to
+          api.github.com over HTTPS in an Authorization header.
+        </p>
+      </div>
+    </details>
   </div>
 </header>
 
+<!-- ========== STEP RAIL (STEP 21) — plain anchors, no JS navigation ========== -->
+<nav class="steprail" aria-label="Steps">
+  <div class="wrap rail-inner">
+    <a class="rail-step" href="#step1" id="rail1"><span class="rn">1</span><span class="rl">Refresh</span></a>
+    <a class="rail-step" href="#step2" id="rail2"><span class="rn">2</span><span class="rl">Select</span></a>
+    <a class="rail-step" href="#step3" id="rail3"><span class="rn">3</span><span class="rl">Your take</span></a>
+    <a class="rail-step" href="#step4" id="rail4"><span class="rn">4</span><span class="rl">Image</span></a>
+    <a class="rail-step" href="#step5" id="rail5"><span class="rn">5</span><span class="rl">Send</span></a>
+  </div>
+</nav>
+
 <main class="wrap">
 
-  <!-- ========== 1. SETTINGS ========== -->
-  <details class="strip" id="settings">
-    <summary>
-      <span>Settings</span>
-      <span class="status" id="settingsStatus">not configured</span>
-    </summary>
-    <div class="body">
-      <div class="grid2">
-        <div>
-          <label class="field" for="owner">Owner</label>
-          <input type="text" id="owner" placeholder="harvey" autocomplete="off" spellcheck="false">
-        </div>
-        <div>
-          <label class="field" for="repo">Repository</label>
-          <input type="text" id="repo" placeholder="linkedin-ai-digest" autocomplete="off" spellcheck="false">
-        </div>
-      </div>
-      <div style="margin-top: 12px;">
-        <label class="field" for="branch">Default branch</label>
-        <input type="text" id="branch" placeholder="main" autocomplete="off" spellcheck="false">
-      </div>
-      <div style="margin-top: 12px;">
-        <label class="field" for="token">GitHub PAT (fine-grained)</label>
-        <input type="password" id="token" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
-      </div>
-      <div class="row">
-        <button class="btn primary" id="saveSettings" type="button">Save settings</button>
-        <button class="btn danger" id="forgetToken" type="button">Forget token</button>
-      </div>
-      <p class="note">
-        Use a <strong>fine-grained PAT</strong> scoped to this repository only, with
-        just <strong>Actions: write</strong> and <strong>Contents: read</strong>.
-        Do not paste a classic token or one with broader scopes &mdash; it lives in
-        this browser's localStorage on this device. The token is sent only to
-        api.github.com over HTTPS in an Authorization header.
-      </p>
-    </div>
-  </details>
-
-  <!-- ========== 2. REFRESH ========== -->
-  <section>
-    <h2>Candidate menu</h2>
+  <!-- ========== 1. REFRESH ========== -->
+  <section class="step" id="step1">
+    <h2 class="step-h">
+      <span class="step-n">1</span>
+      <span>Refresh the menu</span>
+      <span class="step-s" id="generated">no candidates loaded</span>
+    </h2>
+    <p class="step-sub">
+      <strong>Refresh news</strong> asks GitHub to go fetch today's headlines &mdash; it takes a
+      minute or two. When it's done, <strong>Reload list</strong> pulls the new menu into this page.
+    </p>
     <div class="refresh-row">
       <button class="btn" id="refreshBtn" type="button">Refresh news</button>
       <button class="btn" id="reloadBtn" type="button">Reload list</button>
-      <span class="ts" id="generated">never</span>
     </div>
-    <div class="status-line" id="refreshStatus"></div>
+    <div class="status-line" id="refreshStatus" aria-live="polite"></div>
   </section>
 
-  <!-- ========== 3. STORY LIST ========== -->
-  <section>
-    <div class="meta-bar">
-      <span><span class="count" id="selCount">0</span> / <span id="selMax">5</span> selected</span>
-      <span id="candidateCount"></span>
-    </div>
-    <div class="cap-warn" id="capWarn">Selection full &mdash; uncheck one to add another, or clear the custom story.</div>
-    <ul class="stories" id="storyList"></ul>
+  <!-- ========== 2. STORY LIST ========== -->
+  <section class="step" id="step2">
+    <h2 class="step-h">
+      <span class="step-n">2</span>
+      <span>Pick your stories</span>
+      <span class="step-s">
+        <span id="candidateCount"></span>
+        <b id="selCount">0</b>/<span id="selMax">5</span> selected
+      </span>
+    </h2>
+    <p class="step-sub">
+      Up to 5. The number on each badge is the order they'll appear in the post &mdash;
+      click in the order you want. Use <span aria-hidden="true">&#8599;</span> to read a story first.
+    </p>
+    <div class="cap-warn" id="capWarn" aria-live="polite">Selection full &mdash; unpick one to add another, or clear the custom story.</div>
+    <ul class="stories" id="storyList">
+      <li><div class="empty">Loading candidates&hellip;</div></li>
+    </ul>
   </section>
 
-  <!-- ========== 4. CUSTOM STORY ========== -->
-  <section>
-    <h2>Custom story <span style="text-transform:none; color:var(--muted); font-weight:400;">(optional, takes one slot)</span></h2>
+  <!-- ========== 3. CUSTOM STORY ========== -->
+  <section class="step" id="step3">
+    <h2 class="step-h">
+      <span class="step-n">3</span>
+      <span>Add your own take</span>
+      <span class="step-opt">optional</span>
+      <span class="step-s" id="customStatus">not used</span>
+    </h2>
+    <p class="step-sub">
+      Something the feeds missed? Add it by hand. It takes one of the 5 slots, so the
+      picker above drops to 4 while it's active.
+    </p>
     <div class="custom-card" id="customCard">
       <div class="custom-head">
         <span class="chip">manual</span>
-        <span style="font-size:12px; color:var(--muted); font-family:var(--mono);">enter a headline to activate</span>
+        <span class="hint">enter a headline to activate</span>
       </div>
       <div class="field-group">
         <label class="field" for="customTitle">Headline</label>
@@ -666,11 +933,23 @@
     </div>
   </section>
 
-  <!-- ========== 5. IMAGE PICKER ========== -->
-  <section>
-    <h2>Post image</h2>
-    <div class="img-options" id="imgOptions"></div>
-    <div class="field-group" id="customUrlWrap" style="display:none; margin-bottom:12px;">
+  <!-- ========== 4. IMAGE PICKER ========== -->
+  <section class="step" id="step4">
+    <h2 class="step-h">
+      <span class="step-n">4</span>
+      <span>Choose an image</span>
+      <span class="step-opt">optional</span>
+      <span class="step-s" id="imgStatus">text-only</span>
+    </h2>
+    <p class="step-sub">
+      One image goes on the LinkedIn post. Options come from the stories you picked above &mdash;
+      or paste your own URL. Text-only is fine.
+    </p>
+    <fieldset>
+      <legend class="sr-only">Post image</legend>
+      <div class="img-options" id="imgOptions"></div>
+    </fieldset>
+    <div class="field-group" id="customUrlWrap" style="display:none;">
       <label class="field" for="customImgUrl">Paste image URL</label>
       <input type="text" id="customImgUrl" placeholder="https://...">
     </div>
@@ -679,17 +958,28 @@
     </div>
   </section>
 
-  <!-- ========== 6. PREVIEW JSON ========== -->
-  <details class="preview">
-    <summary>Preview selection JSON (what gets sent)</summary>
-    <pre class="json" id="previewJson">{}</pre>
-  </details>
+  <!-- ========== 5. GENERATE ========== -->
+  <section class="step" id="step5">
+    <h2 class="step-h">
+      <span class="step-n">5</span>
+      <span>Send to Telegram</span>
+    </h2>
+    <p class="step-sub">
+      This writes the draft and sends it to Telegram. <strong>Nothing is posted to LinkedIn
+      until you approve it there</strong> &mdash; this button never publishes.
+    </p>
 
-  <!-- ========== 7. GENERATE ========== -->
-  <div class="generate-section">
-    <button class="generate-btn" id="generateBtn" type="button" disabled>Generate &amp; send to Telegram</button>
-    <div class="generate-hint" id="generateHint">select at least one story and configure settings</div>
-  </div>
+    <details class="preview">
+      <summary>Preview selection JSON (what gets sent)</summary>
+      <pre class="json" id="previewJson">{}</pre>
+    </details>
+
+    <div class="generate-section">
+      <button class="generate-btn" id="generateBtn" type="button" disabled
+              aria-describedby="generateHint">Generate &amp; send to Telegram</button>
+      <div class="generate-hint" id="generateHint">select at least one story and configure settings</div>
+    </div>
+  </section>
 
 </main>
 
@@ -701,8 +991,9 @@
    AI Digest Control Desk — app logic
    No framework. State lives in a single object; render functions read it and
    update only the DOM regions that change. All user/feed content is inserted
-   via textContent (XSS-safe); the only innerHTML use is on the empty <span>
-   inside the dot indicator (static, no variables).
+   via textContent (XSS-safe); the only innerHTML uses are empty-string wipes
+   and the decodeEntities textarea (a raw-text element — parses entities,
+   never executes scripts).
    ============================================================================ */
 
 const LS_KEYS = {
@@ -731,9 +1022,9 @@ const state = {
 const $ = (id) => document.getElementById(id);
 
 function decodeEntities(str) {
-  /* Decode the small whitelist of HTML entities RSS feeds ship in titles.
-     textarea is a raw-text element: setting innerHTML parses entities but
-     never executes scripts. Safe pattern. */
+  /* Decode the HTML entities RSS feeds ship in titles/summaries/urls
+     (&#038;, &#8230;, &amp;). textarea is a raw-text element: setting
+     innerHTML parses entities but never executes scripts. Safe pattern. */
   if (!str) return "";
   const ta = document.createElement("textarea");
   ta.innerHTML = String(str);
@@ -814,7 +1105,7 @@ function renderSettings() {
   $("owner").value  = s.owner;
   $("repo").value   = s.repo;
   $("branch").value = s.branch;
-  $("token").value  = s.token;   /* masked via type=password; value re-loaded but not echoed in plain text */
+  $("token").value  = s.token;   /* masked via type=password; never echoed as text */
   const ok = s.owner && s.repo && s.branch && s.token;
   const ss = $("settingsStatus");
   ss.textContent = ok ? "ready" : "not configured";
@@ -830,7 +1121,10 @@ function saveSettings() {
   localStorage.setItem(LS_KEYS.owner,   s.owner);
   localStorage.setItem(LS_KEYS.repo,    s.repo);
   localStorage.setItem(LS_KEYS.branch,  s.branch);
+  /* FIX 21d: symmetric — clearing the field and saving must actually clear the
+     stored token, not leave the old one behind to reappear on reload. */
   if (s.token) localStorage.setItem(LS_KEYS.token, s.token);
+  else         localStorage.removeItem(LS_KEYS.token);
   renderSettings();
   updateGenerateButton();
   showToast("Settings saved.", "ok");
@@ -858,7 +1152,7 @@ async function fetchCandidates() {
     state.candidates = Array.isArray(data.candidates) ? data.candidates : [];
     state.generated_utc = data.generated_utc || null;
     state.error = data.error || null;
-    /* Reset selection — ids from a prior fetch may no longer exist. */
+    /* Prune selection — ids from a prior fetch may no longer exist. */
     const live = new Set(state.candidates.map(c => c.candidate_id));
     state.selectedIds = state.selectedIds.filter(id => live.has(id));
   } catch (e) {
@@ -866,6 +1160,7 @@ async function fetchCandidates() {
     state.generated_utc = null;
     state.error = e.message || String(e);
   }
+  syncImageSelection();          /* FIX 21c */
   renderStories();
   renderRefreshStatus();
   renderImagePicker();
@@ -886,13 +1181,17 @@ async function triggerRefresh() {
     const r = await apiDispatch(WORKFLOWS.refresh, { ref: cfg.branch });
     if (r.ok) {
       $("refreshStatus").textContent =
-        "Refresh queued — hit Reload list in 1–2 min after the workflow commits candidates.json.";
+        "Refresh queued — hit Reload list in 1–2 min, once the workflow has committed candidates.json.";
       $("refreshStatus").className = "status-line ok";
       showToast("Refresh workflow queued.", "ok");
     } else {
+      $("refreshStatus").textContent = apiErrMsg(r.status);
+      $("refreshStatus").className = "status-line err";
       showToast(apiErrMsg(r.status), "err");
     }
   } catch (e) {
+    $("refreshStatus").textContent = networkErrMsg(e);
+    $("refreshStatus").className = "status-line err";
     showToast(networkErrMsg(e), "err");
   } finally {
     btn.disabled = false;
@@ -928,7 +1227,9 @@ function apiErrMsg(status) {
   return "GitHub returned HTTP " + status + ".";
 }
 function networkErrMsg(e) {
-  return "Couldn't reach GitHub — check your connection.";
+  /* FIX 21f: report the real cause instead of always blaming the connection. */
+  const detail = (e && e.message) ? e.message : "unknown error";
+  return "Couldn't reach GitHub (" + detail + ") — check your connection.";
 }
 
 /* ---------- story list render ---------- */
@@ -938,24 +1239,20 @@ function renderStories() {
   const cs = state.candidates;
 
   $("candidateCount").textContent =
-    cs.length ? cs.length + " candidate" + (cs.length === 1 ? "" : "s") : "";
+    cs.length ? cs.length + " loaded · " : "";
 
   if (state.error) {
-    const li = document.createElement("li");
-    const div = document.createElement("div");
-    div.className = "empty";
-    div.textContent = "Couldn't load candidates: " + state.error;
-    li.appendChild(div);
-    ul.appendChild(li);
+    ul.appendChild(emptyRow(
+      "Couldn't load candidates",
+      state.error + " — if you're opening this file directly, serve the docs/ folder over HTTP instead.",
+      true));
     return;
   }
   if (!cs.length) {
-    const li = document.createElement("li");
-    const div = document.createElement("div");
-    div.className = "empty";
-    div.textContent = "No news loaded. Hit Refresh news, then Reload list in a minute or two.";
-    li.appendChild(div);
-    ul.appendChild(li);
+    ul.appendChild(emptyRow(
+      "No news loaded yet",
+      "Go up to step 1, hit Refresh news, then Reload list in a minute or two.",
+      false));
     return;
   }
 
@@ -964,36 +1261,33 @@ function renderStories() {
     const c = cs[i];
     const idx = state.selectedIds.indexOf(c.candidate_id);
     const isSelected = idx >= 0;
-    const atCap = !isSelected && state.selectedIds.length >= max;
+    const title = decodeEntities(c.title);
 
     const li = document.createElement("li");
+    const article = document.createElement("article");
 
     const label = document.createElement("label");
     label.className = "story-row-label";
 
-    /* hidden checkbox for keyboard a11y; badge is the visual */
+    /* visually-hidden checkbox for keyboard a11y; the badge is the visual.
+       FIX 21e: never disabled — at cap the row stays focusable and
+       toggleStory() explains why nothing happened. */
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.className = "story-check";
     cb.checked = isSelected;
-    cb.disabled = atCap;
     cb.dataset.id = c.candidate_id;
     cb.addEventListener("change", () => toggleStory(c.candidate_id));
-    /* keyboard focus ring on the badge via :focus-within on label */
     cb.setAttribute("aria-label",
-      (isSelected ? "Selected as #" + (idx + 1) + ": " : "Select: ")
-      + decodeEntities(c.title));
+      (isSelected ? "Selected as #" + (idx + 1) + ": " : "Select: ") + title);
 
-    /* signature element: numbered selection badge (empty circle until picked) */
+    /* signature element: numbered selection badge ("+" until picked) */
     const badge = document.createElement("span");
-    badge.className = "badge" + (isSelected ? " active" : "") + (atCap ? " disabled" : "");
+    badge.className = "badge" + (isSelected ? " active" : "");
     badge.textContent = isSelected ? String(idx + 1) : "";
 
-    const article = document.createElement("article");
-
-    /* thumbnail — only rendered when image_url is present. A failed load
-       removes the thumb and collapses the grid back to 2 columns so the
-       card never shows a broken-image icon or empty placeholder box. */
+    /* thumbnail — only when image_url is present. A failed load removes the
+       thumb so the card never shows a broken-image icon. */
     let thumbEl = null;
     const rawImgUrl = c.image_url ? decodeEntities(c.image_url) : null;
     if (rawImgUrl) {
@@ -1002,11 +1296,9 @@ function renderStories() {
       img.src = rawImgUrl;
       img.alt = "";
       img.loading = "lazy";
-      img.referrerPolicy = "no-referrer";   /* some CDNs (Reddit) block hotlinks with a Referer header */
+      img.referrerPolicy = "no-referrer";   /* some CDNs (Reddit) block hotlinks via Referer */
       img.addEventListener("error", () => {
-        /* hide the thumb and recollapse the grid */
-        if (thumbEl && thumbEl.parentNode) thumbEl.parentNode.removeChild(thumbEl);
-        article.classList.remove("has-thumb");
+        if (img.parentNode) img.parentNode.removeChild(img);
       });
       thumbEl = img;
     }
@@ -1015,10 +1307,10 @@ function renderStories() {
     const body = document.createElement("div");
     body.className = "story-body";
 
-    const title = document.createElement("div");
-    title.className = "story-title";
-    title.textContent = decodeEntities(c.title);
-    body.appendChild(title);
+    const titleEl = document.createElement("div");
+    titleEl.className = "story-title";
+    titleEl.textContent = title;
+    body.appendChild(titleEl);
 
     const meta = document.createElement("div");
     meta.className = "story-meta";
@@ -1026,10 +1318,9 @@ function renderStories() {
     srcSpan.className = "src";
     srcSpan.textContent = decodeEntities(c.source_name);
     meta.appendChild(srcSpan);
-    meta.appendChild(document.createTextNode(" · "));
     const timeEl = document.createElement("time");
-    timeEl.textContent = absTime(c.published);
-    timeEl.title = relTime(c.published) || "";   /* hover for relative */
+    timeEl.textContent = relTime(c.published);
+    timeEl.title = absTime(c.published) || "";   /* hover for the absolute UTC stamp */
     timeEl.dateTime = c.published || "";
     meta.appendChild(timeEl);
     body.appendChild(meta);
@@ -1046,8 +1337,23 @@ function renderStories() {
     if (thumbEl) label.appendChild(thumbEl);
     label.appendChild(body);
 
-    article.className = "story" + (isSelected ? " selected" : "") + (thumbEl ? " has-thumb" : "");
+    article.className = "story" + (isSelected ? " selected" : "");
     article.appendChild(label);
+
+    /* STEP 21: read-the-article link. MUST be a sibling of the label —
+       inside it, any click would toggle the checkbox. */
+    if (c.link) {
+      const open = document.createElement("a");
+      open.className = "open";
+      open.href = c.link;
+      open.target = "_blank";
+      open.rel = "noopener noreferrer";
+      open.textContent = "↗";
+      open.title = "Open article in a new tab";
+      open.setAttribute("aria-label", "Open article in a new tab: " + title);
+      article.appendChild(open);
+    }
+
     li.appendChild(article);
     ul.appendChild(li);
   }
@@ -1058,6 +1364,18 @@ function renderStories() {
     state.selectedIds.length >= max && cs.length > max);
 }
 
+function emptyRow(headline, detail, isErr) {
+  const li = document.createElement("li");
+  const div = document.createElement("div");
+  div.className = "empty" + (isErr ? " err" : "");
+  const strong = document.createElement("strong");
+  strong.textContent = headline;
+  div.appendChild(strong);
+  div.appendChild(document.createTextNode(detail));
+  li.appendChild(div);
+  return li;
+}
+
 function toggleStory(id) {
   const max = maxFetched();
   const i = state.selectedIds.indexOf(id);
@@ -1065,22 +1383,36 @@ function toggleStory(id) {
     state.selectedIds.splice(i, 1);
   } else {
     if (state.selectedIds.length >= max) {
+      /* FIX 21e: rows are no longer disabled, so this branch is now reachable.
+         Explain the cap; re-rendering reverts the checkbox we just ticked. */
       $("capWarn").classList.add("show");
-      /* re-render so the disabled checkboxes reflect reality */
+      showToast("That's " + max + " stories — unpick one to swap it out.", "err");
       renderStories();
       return;
     }
     state.selectedIds.push(id);
   }
-  /* if the currently-picked story image is no longer selected, fall back */
-  if (state.image.mode === "story" && !state.selectedIds.includes(state.image.storyId)) {
-    state.image.mode = "none";
-    state.image.storyId = null;
-  }
+  syncImageSelection();          /* FIX 21c */
   renderStories();
   renderImagePicker();
   updatePreview();
   updateGenerateButton();
+}
+
+/* FIX 21c: a story-sourced image must never outlive its story. Single guard,
+   called from every path that can shrink or replace the selection:
+   toggleStory (unpick), onCustomInput (cap 5→4 pops one), fetchCandidates
+   (ids from the previous menu are gone). Without it the payload could ship an
+   image_url for a story absent from story_ids. */
+function syncImageSelection() {
+  if (state.image.mode !== "story") return;
+  const id = state.image.storyId;
+  const stillSelected = state.selectedIds.includes(id);
+  const stillExists = state.candidates.some(c => c.candidate_id === id);
+  if (!stillSelected || !stillExists) {
+    state.image.mode = "none";
+    state.image.storyId = null;
+  }
 }
 
 /* ---------- custom story ---------- */
@@ -1088,10 +1420,13 @@ function onCustomInput() {
   state.custom.title   = $("customTitle").value;
   state.custom.link    = $("customLink").value;
   state.custom.summary = $("customSummary").value;
-  $("customCard").classList.toggle("active", isCustomActive());
+  const active = isCustomActive();
+  $("customCard").classList.toggle("active", active);
+  $("customStatus").textContent = active ? "takes 1 slot" : "not used";
   /* cap may have changed (5 ↔ 4) — trim overflow */
   const max = maxFetched();
   while (state.selectedIds.length > max) state.selectedIds.pop();
+  syncImageSelection();          /* FIX 21c */
   renderStories();
   renderImagePicker();
   updatePreview();
@@ -1103,32 +1438,32 @@ function renderImagePicker() {
   const wrap = $("imgOptions");
   wrap.innerHTML = "";
 
-  /* gather image options from currently-selected stories that have an image.
-     Decode HTML entities in image_url (feeds ship things like &#038; for &)
-     so the URL is well-formed when the browser fetches it. */
+  /* Options come from currently-selected stories that have an image.
+     Decode HTML entities in image_url (feeds ship &#038; for &) so the URL is
+     well-formed when the browser — and later the backend — fetches it. */
   const opts = state.candidates
     .filter(c => state.selectedIds.includes(c.candidate_id) && c.image_url)
     .map(c => ({ id: c.candidate_id, url: decodeEntities(c.image_url), src: c.source_name }));
 
-  /* radio per selected story with image */
   for (const o of opts) {
     const lab = document.createElement("label");
-    lab.className = "img-opt" +
-      (state.image.mode === "story" && state.image.storyId === o.id ? " selected" : "");
+    const picked = state.image.mode === "story" && state.image.storyId === o.id;
+    lab.className = "img-opt" + (picked ? " selected" : "");
     const img = document.createElement("img");
     img.src = o.url;
     img.alt = "";
     img.loading = "lazy";
     img.referrerPolicy = "no-referrer";
     img.addEventListener("error", () => { lab.style.opacity = "0.4"; });
-    const label = document.createElement("div");
-    label.className = "label";
-    label.textContent = decodeEntities(o.src);
+    const cap = document.createElement("div");
+    cap.className = "label";
+    cap.textContent = decodeEntities(o.src);
     const radio = document.createElement("input");
     radio.type = "radio";
     radio.name = "imgChoice";
     radio.value = "story:" + o.id;
-    radio.checked = state.image.mode === "story" && state.image.storyId === o.id;
+    radio.checked = picked;
+    radio.setAttribute("aria-label", "Use the image from " + decodeEntities(o.src));
     radio.addEventListener("change", () => {
       state.image.mode = "story";
       state.image.storyId = o.id;
@@ -1137,48 +1472,12 @@ function renderImagePicker() {
     });
     lab.appendChild(radio);
     lab.appendChild(img);
-    lab.appendChild(label);
+    lab.appendChild(cap);
     wrap.appendChild(lab);
   }
 
-  /* "no image" radio */
-  const noneLab = document.createElement("label");
-  noneLab.className = "img-opt none" + (state.image.mode === "none" ? " selected" : "");
-  const noneRadio = document.createElement("input");
-  noneRadio.type = "radio";
-  noneRadio.name = "imgChoice";
-  noneRadio.value = "none";
-  noneRadio.checked = state.image.mode === "none";
-  noneRadio.style.position = "static";
-  noneRadio.style.margin = "0 8px 0 0";
-  noneRadio.addEventListener("change", () => {
-    state.image.mode = "none";
-    renderImagePicker();
-    updatePreview();
-  });
-  noneLab.appendChild(noneRadio);
-  noneLab.appendChild(document.createTextNode("No image (text-only)"));
-  wrap.appendChild(noneLab);
-
-  /* "custom URL" radio */
-  const cLab = document.createElement("label");
-  cLab.className = "img-opt none" + (state.image.mode === "custom" ? " selected" : "");
-  const cRadio = document.createElement("input");
-  cRadio.type = "radio";
-  cRadio.name = "imgChoice";
-  cRadio.value = "custom";
-  cRadio.checked = state.image.mode === "custom";
-  cRadio.style.position = "static";
-  cRadio.style.margin = "0 8px 0 0";
-  cRadio.addEventListener("change", () => {
-    state.image.mode = "custom";
-    $("customUrlWrap").style.display = "block";
-    renderImagePicker();
-    updatePreview();
-  });
-  cLab.appendChild(cRadio);
-  cLab.appendChild(document.createTextNode("Custom URL…"));
-  wrap.appendChild(cLab);
+  wrap.appendChild(plainImgOption("none", "No image (text-only)"));
+  wrap.appendChild(plainImgOption("custom", "Custom URL…"));
 
   $("customUrlWrap").style.display = state.image.mode === "custom" ? "block" : "none";
 
@@ -1195,12 +1494,13 @@ function renderImagePicker() {
     const img = document.createElement("img");
     img.src = chosen;
     img.alt = "";
+    img.referrerPolicy = "no-referrer";
     img.addEventListener("error", () => {
       pv.innerHTML = "";
       const lbl = document.createElement("span");
       lbl.className = "pv-label";
       lbl.style.color = "var(--alert)";
-      lbl.textContent = "image couldn't load — check URL";
+      lbl.textContent = "image couldn't load — check the URL";
       pv.appendChild(lbl);
     });
     pv.appendChild(img);
@@ -1209,6 +1509,28 @@ function renderImagePicker() {
     lbl.textContent = chosen.length > 70 ? chosen.slice(0, 67) + "…" : chosen;
     pv.appendChild(lbl);
   }
+
+  $("imgStatus").textContent = chosen ? "1 image attached" : "text-only";
+}
+
+/* The two synthetic options ("no image", "custom URL") are plain rows rather
+   than thumbnails — same markup shape, no <img>. */
+function plainImgOption(mode, text) {
+  const lab = document.createElement("label");
+  lab.className = "img-opt plain" + (state.image.mode === mode ? " selected" : "");
+  const radio = document.createElement("input");
+  radio.type = "radio";
+  radio.name = "imgChoice";
+  radio.value = mode;
+  radio.checked = state.image.mode === mode;
+  radio.addEventListener("change", () => {
+    state.image.mode = mode;
+    renderImagePicker();
+    updatePreview();
+  });
+  lab.appendChild(radio);
+  lab.appendChild(document.createTextNode(text));
+  return lab;
 }
 
 function currentImageUrl() {
@@ -1220,8 +1542,8 @@ function currentImageUrl() {
   if (state.image.mode === "story") {
     const c = state.candidates.find(c => c.candidate_id === state.image.storyId);
     /* Return the DECODED url — the entity-encoded form is not a usable URL.
-       This is what gets sent in selection.image_url; the backend re-fetches
-       it for the LinkedIn post image, so it must be the well-formed URL. */
+       This is what gets sent as selection.image_url; the backend re-fetches
+       it for the LinkedIn post image, so it must be well-formed. */
     return c && c.image_url ? decodeEntities(c.image_url) : null;
   }
   return null;
@@ -1232,11 +1554,15 @@ function onCustomUrlInput() {
   if (state.image.mode !== "custom") {
     state.image.mode = "custom";
     renderImagePicker();
+  } else {
+    $("imgStatus").textContent = currentImageUrl() ? "1 image attached" : "text-only";
   }
   updatePreview();
 }
 
-/* ---------- selection JSON ---------- */
+/* ---------- selection JSON ----------
+   EXACT contract with src/select_build.py: the three keys below and nothing
+   else — build_from_selection() rejects any unknown top-level key outright. */
 function buildSelection() {
   const sel = {
     story_ids: state.selectedIds.slice(),
@@ -1256,6 +1582,27 @@ function buildSelection() {
 
 function updatePreview() {
   $("previewJson").textContent = JSON.stringify(buildSelection(), null, 2);
+  renderSteps();
+}
+
+/* ---------- STEP 21: step rail state ---------- */
+function renderSteps() {
+  const done = {
+    1: state.candidates.length > 0,
+    2: state.selectedIds.length > 0,
+    3: isCustomActive(),
+    4: currentImageUrl() !== null,
+    5: false,
+  };
+  /* "current" = the first thing still standing between Harvey and a draft. */
+  const current = !done[1] ? 1 : (!done[2] && !done[3]) ? 2 : 5;
+  for (let n = 1; n <= 5; n++) {
+    const el = $("rail" + n);
+    if (!el) continue;
+    el.className = "rail-step" + (done[n] ? " done" : "") + (n === current ? " current" : "");
+    if (n === current) el.setAttribute("aria-current", "step");
+    else el.removeAttribute("aria-current");
+  }
 }
 
 /* ---------- generate button ---------- */
@@ -1268,12 +1615,13 @@ function updateGenerateButton() {
   const ready = storiesOk && settingsOk;
   btn.disabled = !ready;
   if (ready) {
-    hint.textContent = "draft will be sent to Telegram for your approval";
+    hint.textContent = "draft goes to Telegram for your approval — nothing posts to LinkedIn yet";
   } else if (!storiesOk) {
-    hint.textContent = "select at least one story (or add a custom story)";
-  } else if (!settingsOk) {
+    hint.textContent = "step 2: select at least one story (or add a custom story)";
+  } else {
     hint.textContent = "open Settings to add owner/repo/branch and a PAT";
   }
+  renderSteps();
 }
 
 async function onGenerate() {
@@ -1312,7 +1660,7 @@ async function onGenerate() {
 function renderRefreshStatus() {
   const ts = state.generated_utc;
   $("generated").textContent = ts
-    ? ("generated " + relTime(ts))
+    ? ("menu generated " + relTime(ts))
     : "no candidates loaded";
 }
 
@@ -1330,6 +1678,19 @@ function init() {
   $("customLink").addEventListener("input", onCustomInput);
   $("customSummary").addEventListener("input", onCustomInput);
   $("customImgUrl").addEventListener("input", onCustomUrlInput);
+
+  /* STEP 21: the settings <details> is a dropdown panel now — close it on an
+     outside click or Escape, the way every other dropdown behaves. */
+  const settings = $("settings");
+  document.addEventListener("click", (e) => {
+    if (settings.open && !settings.contains(e.target)) settings.open = false;
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && settings.open) {
+      settings.open = false;
+      settings.querySelector("summary").focus();
+    }
+  });
 
   updatePreview();
   updateGenerateButton();

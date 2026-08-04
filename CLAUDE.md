@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 20).
+  comments (continue the numbering already in the files; next free number: 22).
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -133,6 +133,25 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   Dashboard's last action is firing the generate workflow — final approval
   stays in Telegram (unchanged). Design: Newsroom Terminal (dark), signature
   element = numbered selection badges (glowing green chips with mono digits).
+  **STEP 21 (UI rebuild)** — same file, same contracts, rebuilt layout:
+  explicit 5-step flow (sticky rail of plain `<a href="#stepN">` anchors +
+  numbered `<h2>` step headers, each with a one-line explainer and a live
+  status), Settings moved into the header as a dropdown `<details>`, story
+  cards gained an "open article" `<a>` that is a SIBLING of the row `<label>`
+  (inside it, any click would toggle the checkbox). Six fixes, all commented
+  `FIX 21a`–`21f` in the file: (a) `#toast[aria-live]{pointer-events:auto}`
+  put an invisible click-blocker over the Generate button — rule deleted;
+  (b) `.story-check` had no positioned ancestor, so Tab yanked scroll to page
+  top — `article.story` is now `position:relative`; (c) `syncImageSelection()`
+  is the SINGLE guard stopping a story-sourced `image_url` outliving its story
+  — called from `toggleStory`, `onCustomInput` (cap 5→4 pops one) and
+  `fetchCandidates`; never reimplement it per-caller; (d) `saveSettings` now
+  `removeItem`s an emptied token instead of leaving the old one behind;
+  (e) at-cap rows are no longer `disabled` (that removed them from the tab
+  order) — `toggleStory` explains the cap instead; (f) `networkErrMsg` reports
+  the real cause. Also: skip link, contiguous heading levels, `<fieldset>` +
+  screen-reader legend on the image radios, `aria-live` on the cap notice and
+  refresh status, `aria-describedby` on the Generate button, 44px buttons.
 
 ## Verified facts (from live testing — don't "fix" these)
 - Gemini free-tier model that works: **`gemini-3.5-flash`**. 503s under load
@@ -190,7 +209,9 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   `--from-selection` entry, two `workflow_dispatch` workflows). **STEP 20
   done: web-selection FRONTEND** (`docs/index.html` static dashboard). All
   four pieces wired together; the dashboard fires the workflows via the
-  Actions dispatch API, final approval stays in Telegram.
+  Actions dispatch API, final approval stays in Telegram. **STEP 21 done:
+  dashboard UI rebuild** — 5-step flow, per-card open link, six fixes
+  (`FIX 21a`–`21f`); no backend, workflow, or contract changes.
 
 ## Harvey-side setup (do once, manually)
 - **Enable GitHub Pages on `/docs`:** repo Settings → Pages → Source =
