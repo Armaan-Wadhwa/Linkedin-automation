@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 22).
+  comments (continue the numbering already in the files; next free number: 23).
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -107,6 +107,18 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   `history.json` + `runs.log` every run (`if: always()`) so the repo never
   hits the 60-day inactivity auto-disable; failed generation still logs, then
   re-fails the run.
+- **Failure-visibility guard (STEP 22, all four workflows).** Every workflow
+  ends with a guard step, AFTER the `if: always()` log/commit step:
+  `if: always() && steps.<id>.outcome != 'success'` → echo the outcome, `exit 1`.
+  Two rules make it work, and both are easy to get wrong:
+  (a) a bare `if:` is implicitly wrapped in `success()`, so a guard without
+  `always()` is itself skipped once an earlier step failed and asserts nothing;
+  (b) `!= 'success'` (not `== 'failure'`) is what covers `skipped` — the state a
+  step is left in when setup/install dies before it. Keep "always commit the
+  log" and "always go green" strictly separate: the commit step is `always()`,
+  the job conclusion is not. Never add `continue-on-error` to checkout /
+  setup-python / install — only the ONE main step per workflow carries it, so
+  the log/commit steps can run.
 - `.github/workflows/refresh_candidates.yml` — STEP 19, `workflow_dispatch`
   only (no cron — Harvey triggers from the dashboard when he wants a fresh
   menu). Runs `python src/emit_candidates.py`, commits `docs/candidates.json`
@@ -212,6 +224,18 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   Actions dispatch API, final approval stays in Telegram. **STEP 21 done:
   dashboard UI rebuild** — 5-step flow, per-card open link, six fixes
   (`FIX 21a`–`21f`); no backend, workflow, or contract changes.
+  **STEP 22 done (Task 14): `outcome=skipped` gap CLOSED** in all four
+  workflows — guard widened from `== 'failure'` to
+  `always() && outcome != 'success'` (see the guard note above).
+  Investigation finding, recorded so it isn't re-litigated: the three
+  `outcome=skipped` days in `runs.log` (2026-07-18/19/20) were **red runs, not
+  green** — `pip install` has no `continue-on-error`, so its failure already
+  failed the job by GitHub's default propagation. `skipped` is the label the
+  runs.log line records, not evidence of a green run. STEP 22 changes NO job
+  conclusion in any reachable scenario; it converts an invariant that was
+  inherited from a GitHub default into one the YAML states explicitly, and
+  makes the red run name its cause. Not verified against the Actions UI (no
+  `gh`, private repo) — conclusion rests on documented Actions semantics.
 
 ## Harvey-side setup (do once, manually)
 - **Enable GitHub Pages on `/docs`:** repo Settings → Pages → Source =

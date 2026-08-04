@@ -87,6 +87,18 @@ jobs:
             git push
           fi
 
+      # STEP [22] Was `== 'failure'`, which fires ONLY when the step ran and exited
+      # STEP [22] non-zero. A failed setup/install leaves this step 'skipped', which
+      # STEP [22] the old condition ignored — the run's redness then rested on
+      # STEP [22] GitHub's implicit propagation, not on any rule stated here. A
+      # STEP [22] poll that never ran is never a success, so assert exactly that.
+      # STEP [22] always() is required: a bare `if:` is implicitly wrapped in
+      # STEP [22] success(), so after an install failure the guard would itself be
+      # STEP [22] skipped and assert nothing.
+      # STEP [22] Approval/posting logic is untouched: a poll that legitimately
+      # STEP [22] returns 0 ("no decision yet") still exits green exactly as before.
       - name: Fail the run if the poller failed
-        if: steps.poll.outcome == 'failure'
-        run: exit 1
+        if: always() && steps.poll.outcome != 'success'   # STEP [22]
+        run: |
+          echo "poll outcome='${{ steps.poll.outcome }}' ('skipped' = an earlier setup/install step failed)"   # STEP [22]
+          exit 1
