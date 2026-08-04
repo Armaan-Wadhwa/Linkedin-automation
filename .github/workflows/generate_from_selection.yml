@@ -55,11 +55,26 @@ jobs:
 
       - name: Write selection JSON to tmp file
         # workflow_dispatch string input → file the Python entry can read.
+        # STEP [23] The input is read from the ENV, never interpolated into the
+        # STEP [23] command string. GitHub substitutes ${{ }} as raw text BEFORE
+        # STEP [23] the shell parses the line, so the old
+        # STEP [23] `printf '%s' '${{ inputs.selection }}'` broke on any apostrophe
+        # STEP [23] in a story title ("OpenAI's model"): the quote closed the shell
+        # STEP [23] string early and the rest was parsed as shell tokens. Via env:
+        # STEP [23] the value never reaches the shell parser, so quotes, backticks,
+        # STEP [23] $, backslashes and newlines are all literal; write_text writes
+        # STEP [23] the bytes verbatim. Standard safe pattern for untrusted
+        # STEP [23] workflow_dispatch input.
+        # STEP [23] Validation stays in main.py (json.load) +
+        # STEP [23] select_build._validate_selection — this step only guards
+        # STEP [23] "present and non-empty". No second JSON parser in YAML.
         # mktemp so concurrent runs (defensive — concurrency group already
         # serializes them) can't collide on a fixed name.
+        env:
+          SELECTION: ${{ inputs.selection }}   # STEP [23]
         run: |
           tmp=$(mktemp --suffix=.json)
-          printf '%s' '${{ inputs.selection }}' > "$tmp"
+          python -c "import os,pathlib,sys; v=os.environ['SELECTION']; assert v.strip(), 'selection input is empty'; pathlib.Path(sys.argv[1]).write_text(v, encoding='utf-8')" "$tmp"   # STEP [23]
           echo "SELECTION_FILE=$tmp" >> "$GITHUB_ENV"
 
       - name: Generate draft from selection

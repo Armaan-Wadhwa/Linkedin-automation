@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 23).
+  comments (continue the numbering already in the files; next free number: 24).
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -131,6 +131,18 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   Commits `history.json` + `pending_post.json` + `runs.log` `if: always()`.
   Does NOT post to LinkedIn (approve.yml's job, untouched). Same concurrency
   group as the other three workflows.
+  **STEP 23 (Task 15): the `selection` input is passed via `env:` and read from
+  `os.environ`, NEVER interpolated into a `run:` command string.** GitHub pastes
+  `${{ }}` in as raw text before the shell parses the line, so the old
+  `printf '%s' '${{ inputs.selection }}'` mis-parsed any apostrophe in a story
+  title. THREE measured failure modes, not one: an **odd** number of apostrophes
+  → bash syntax error, exit 2, no file written (loud); an **even** number → exit
+  0 and a SILENTLY corrupted file (`OpenAI's and Anthropic's models` was written
+  as `OpenAIsandAnthropics models`); an apostrophe followed by shell
+  metacharacters → command substitution executes on the runner. The even case is
+  the dangerous one — it does not go red, it just builds a post from mangled
+  data. Via `env:` the value never reaches the shell parser at all. Applies to
+  every future `workflow_dispatch` input; never "quote it better" inline.
 - `docs/index.html` — STEP 20, Phase 4 Task 13: the static GitHub Pages
   dashboard (frontend for the Task 12 backend). Single file, vanilla HTML +
   inline `<style>` + inline `<script>`, zero runtime dependencies, zero CDN
