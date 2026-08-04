@@ -170,6 +170,11 @@ LINKEDIN_VERSION = "202607"                            # STEP [10] LinkedIn-Vers
 # STEP [10] before expiry so Harvey can re-auth — non-fatal if missing/malformed.
 LINKEDIN_TOKEN_ISSUED_UTC_ENV = "LINKEDIN_TOKEN_ISSUED_UTC"  # STEP [10] ISO date for age check
 LINKEDIN_TOKEN_WARN_DAYS = 50                          # STEP [10] re-auth nudge threshold (dies at 60d)
+LINKEDIN_TOKEN_LIFETIME_DAYS = 60                      # STEP [24] hard expiry; was hardcoded in token_status.py
+# STEP [24] Read-only validity probe (Task 16). OpenID Connect userinfo — a /v2/
+# STEP [24] endpoint, so it takes NO LinkedIn-Version header (that's /rest/ only).
+# STEP [24] 200 = alive, 401 = dead; anything else is inconclusive, never an alert.
+LINKEDIN_USERINFO_URL = "https://api.linkedin.com/v2/userinfo"  # STEP [24]
 # STEP [10] Dry-run switch: =1 logs the exact request and returns a fake success
 # STEP [10] WITHOUT calling LinkedIn — proves the approve→post path end-to-end
 # STEP [10] with a real Telegram tap while posting nothing live.

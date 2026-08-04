@@ -1,0 +1,63 @@
+# LinkedIn token monitor — Phase 4 Task 16.                                # STEP [24]
+#
+# The standard-app access token is a 60-day credential with NO refresh token
+# (project gotcha). Nothing used to warn before it died — posting simply began
+# failing. This runs once a day and pings Telegram when, and only when, there
+# is something to say:
+#   - the token is older than config.LINKEDIN_TOKEN_WARN_DAYS (50), or
+#   - no usable issue date is recorded (so age can NEVER be checked — that is
+#     its own alert, not an assumption of freshness), or
+#   - LinkedIn answers 401 to a read-only probe (the token is already dead).
+# Healthy = total silence. A daily "all good" ping would be noise.
+#
+# Read-only: ONE authenticated GET to /v2/userinfo. This workflow NEVER posts
+# to LinkedIn and never touches the approval flow — approve.yml owns that.
+#
+# No concurrency group and no commit step, deliberately, unlike the other four
+# workflows: this one writes no files and pushes nothing, so it cannot race a
+# git push. Sharing `daily-digest` would only queue a trivial monitor behind a
+# 15-minute digest run. Repo activity (the 60-day auto-disable guard) is
+# already covered by daily.yml and approve.yml committing on every run.
+
+name: token-check
+
+on:
+  schedule:
+    # 03:37 UTC = 09:07 IST. Odd minute, and clear of daily.yml's `53 2` and
+    # approve.yml's `:23,:53` every hour, so it never clusters with them.
+    - cron: '37 3 * * *'
+  workflow_dispatch: {}     # manual runs for testing
+
+permissions:
+  contents: read            # read-only monitor: it commits nothing
+
+jobs:
+  token-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # No `continue-on-error` here, so no STEP [22]-style guard is needed:
+      # with nothing to commit there is no reason to swallow the failure, and a
+      # non-zero exit fails the job red on its own. token_status.run() exits 1
+      # only when it HAD something to report and the Telegram send failed — so
+      # a red run here means the alerting itself is broken, which is exactly
+      # the thing that must never fail silently.
+      - name: Check LinkedIn token age and validity
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_TOKEN_ISSUED_UTC: ${{ secrets.LINKEDIN_TOKEN_ISSUED_UTC }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python src/token_status.py

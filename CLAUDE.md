@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 24).
+  comments (continue the numbering already in the files; next free number: 25).
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -119,6 +119,35 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   the job conclusion is not. Never add `continue-on-error` to checkout /
   setup-python / install — only the ONE main step per workflow carries it, so
   the log/commit steps can run.
+- `src/token_status.py` — LinkedIn token age + validity. TWO callers with
+  DELIBERATELY OPPOSITE stances on an unprovable age; do not "unify" them:
+  * `warn_if_stale()` (STEP 10) → `approve.py` appends it to the "✅ Posted to
+    LinkedIn" message. Returns None when the age is unprovable. **Must stay
+    that way** — make it alert and every successful post carries a nudge.
+  * `evaluate(age_days, probe)` (STEP 24) → the standalone monitor. PURE (no
+    I/O) so it is unit-testable; an unprovable age IS an alert here, because
+    silence is exactly the failure being removed. Emits at most ONE combined
+    message; returns None when healthy (no daily "all good" ping).
+  * `probe_token(token)` (STEP 24) — one read-only GET to
+    `config.LINKEDIN_USERINFO_URL` (`/v2/userinfo`, so NO `LinkedIn-Version`
+    header — that is a `/rest/` requirement). 200=valid, 401=invalid,
+    everything else INCONCLUSIVE (never cry wolf on a 5xx). A 403 means the
+    token lacks the `openid`/`profile` scope, so the probe is inert but
+    harmless. Logs status codes only, never the token.
+  * `run()` exits 1 ONLY when it had something to report and the Telegram send
+    failed — the monitor's own failure must be visible. A dead token that IS
+    reported stays green: Telegram is the alert channel.
+  * Reuses `telegram_api.api_call("sendMessage", …)` — a plain send with NO
+    `reply_markup`. `notify.send_draft` is unsuitable: it always attaches the
+    ✅/❌ approve buttons.
+- `.github/workflows/token_check.yml` — STEP 24, Task 16. Daily `37 3 * * *`
+  (09:07 IST; clear of daily.yml's `53 2` and approve.yml's `:23,:53`) +
+  `workflow_dispatch`. Runs `python src/token_status.py`. **No concurrency
+  group and no commit step, unlike the other four** — it writes no files and
+  pushes nothing, so it cannot race a git push; sharing `daily-digest` would
+  only queue a monitor behind a 15-min digest. `permissions: contents: read`.
+  No `continue-on-error`, so no STEP 22 guard is needed — a non-zero exit
+  fails the job red on its own.
 - `.github/workflows/refresh_candidates.yml` — STEP 19, `workflow_dispatch`
   only (no cron — Harvey triggers from the dashboard when he wants a fresh
   menu). Runs `python src/emit_candidates.py`, commits `docs/candidates.json`
@@ -212,7 +241,12 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
 
 ## Known gotchas
 - **LinkedIn standard apps: 60-day access token, NO refresh token.** Manual
-  re-auth ~every 55 days. Phase 4 adds a Telegram token-age warning (>50 days).
+  re-auth ~every 55 days. ✅ DONE (STEP 24, Task 16): `token_check.yml` runs
+  `token_status.run()` daily and Telegrams a warning. **The token is an opaque
+  string with NO embedded date** — its age is knowable ONLY from the
+  `LINKEDIN_TOKEN_ISSUED_UTC` secret, so a missing/malformed/timezone-naive
+  stamp is treated as its OWN alert ("you will get no warning before expiry"),
+  never as "probably fine".
 - GitHub Actions cron is best-effort (delays up to ~50 min; occasional drops).
 - Newsletter HTML parsing (Phase 3) is fragile — always non-fatal.
 - Gemini free-tier limits/models shift — that's why the single `llm_call` seam.
@@ -227,7 +261,9 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   (7) LinkedIn OAuth walkthrough + `post_linkedin.py`; wire into workflows.
 - Phase 3 — ✅ Gmail newsletters (IMAP, STEP 14); ✅ YouTube transcripts
   (Vaibhav source 12, STEP 16); fork tim-hilde feed (pending)
-- Phase 4 — hardening: retries audit, token-age alerts, prompt tuning
+- Phase 4 — hardening: retries audit, ✅ token-age alerts (STEP 24, Task 16 —
+  daily `token_check.yml`, age>50 + 401 probe + "no date recorded" alert),
+  prompt tuning
   (watch: filler intro lines, paragraph spacing in drafts). **STEP 19 done:
   web-selection BACKEND seam** (`select_build.py`, `emit_candidates.py`,
   `--from-selection` entry, two `workflow_dispatch` workflows). **STEP 20
@@ -250,6 +286,13 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   `gh`, private repo) — conclusion rests on documented Actions semantics.
 
 ## Harvey-side setup (do once, manually)
+- **Set the `LINKEDIN_TOKEN_ISSUED_UTC` secret (STEP 24):** a **timezone-aware**
+  ISO stamp of the last re-authorization, e.g. `2026-07-26T00:00:00+00:00`.
+  A naive stamp (`2026-07-26`) is rejected on purpose — it could miscount the
+  age by up to 14h. **Update it every time you re-auth, alongside
+  `LINKEDIN_ACCESS_TOKEN`** — otherwise the age check silently measures the
+  wrong token. Until it is set, `token_check.yml` will (correctly) Telegram a
+  daily "no issue date recorded" alert.
 - **Enable GitHub Pages on `/docs`:** repo Settings → Pages → Source =
   "Deploy from a branch" → Branch = `main` / `/docs` folder. Dashboard then
   lives at `https://<owner>.github.io/<repo>/`.
