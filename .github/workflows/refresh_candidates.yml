@@ -34,6 +34,12 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+        with:
+          # STEP [25] Same stale-checkout race as daily.yml: shares the daily-digest
+          # STEP [25] group and commits runs.log, so it must check out the live tip
+          # STEP [25] (see daily.yml) or risk a rebase CONFLICT when queued behind
+          # STEP [25] another run in the group.
+          ref: ${{ github.event.repository.default_branch }}   # STEP [25]
 
       - name: Set up Python
         uses: actions/setup-python@v5

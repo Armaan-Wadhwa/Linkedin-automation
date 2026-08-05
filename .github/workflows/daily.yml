@@ -29,6 +29,17 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v4
+        with:
+          # STEP [25] Check out the branch TIP, not the SHA pinned at run creation.
+          # STEP [25] daily.yml cron '53 2 * * *' lands on the SAME minute as
+          # STEP [25] approve.yml's '23,53 * * * *'; both share the daily-digest
+          # STEP [25] concurrency group, so they serialize. When approve.yml runs
+          # STEP [25] first it pushes a commit; a stale creation-time checkout would
+          # STEP [25] then build on pre-approve code and the later 'git pull --rebase'
+          # STEP [25] CONFLICTS on pending_post.json + runs.log (full rewrites don't
+          # STEP [25] auto-merge). approve.yml + generate_from_selection.yml already
+          # STEP [25] use this ref for this exact race; daily.yml matches them.
+          ref: ${{ github.event.repository.default_branch }}   # STEP [25]
 
       - name: Set up Python
         uses: actions/setup-python@v5
