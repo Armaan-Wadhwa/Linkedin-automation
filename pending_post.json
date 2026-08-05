@@ -1,8 +1,3 @@
 {
-  "draft": "The shift from single-user AI chatbots to multiplayer agent environments running directly in our daily workflows is accelerating.\n\nI am tracking several significant shifts in how open-source AI tools are being structured for production environments this week.\n\n🤖 Y Combinator open-sourced QM under the MIT license, a multiplayer agent harness running in Slack and the Web that supports engines like Claude Code, Codex, and Pi. It provides isolated workspaces, scoped memory, and durable sandboxes for Slack rooms to prevent vendor lock-in.\n\n📄 Genspark released GenOffice under the Apache License 2.0, an AI office suite for macOS and Windows that uses a Rust-based engine for Sheets and preserves original document bytes by only regenerating edited paragraphs as OOXML.\n\n⚠️ A bug has been identified in the Claude Desktop app on Windows where text \"pasted as attachment\" is completely excluded from exports, leaving an empty slot instead of the actual content.\n\n⚖️ OpenAI publicly addressed a lawsuit from Apple, releasing documented messages and correcting claims regarding its employees to counter the legal filing.\n\nWith Y Combinator open-sourcing their internal agent harness, we are seeing a clear push toward local, multi-agent infrastructure.\n\nAre you planning to integrate multiplayer agent frameworks like QM into your team's Slack or internal operations this year?\n\n#AI #LLM #OpenSource #SoftwareEngineering",
-  "created_utc": "2026-08-04T05:35:49.182428+00:00",
-  "telegram_message_id": 53,
-  "status": "awaiting_approval",
-  "image_url": "https://preview.redd.it/ifj63cqlw8hh1.gif?width=320&crop=smart&s=15f4468a344fe0eaa5eba8e9c15eb151081f4ada",
-  "image_source": "story"
+  "status": "superseded"
 }
