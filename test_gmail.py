@@ -23,6 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
 import config      # noqa: E402
 import gmail_fetch  # noqa: E402
 import rank         # noqa: E402
+import retryutil    # noqa: E402  STEP [26] neutralize IMAP retry sleeps
 
 NOW = datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
 
@@ -253,11 +254,14 @@ def test_login_failure_returns_empty_clean_through_finally():
         raise OSError("auth failure")
 
     gmail_fetch._imap_connect = boom
+    orig_sleep = retryutil.sleep                                       # STEP [26]
+    retryutil.sleep = lambda _s: None   # STEP [26] retried now -> keep the suite fast
     try:
         out = gmail_fetch.fetch_newsletter_stories()  # must not raise
         assert out == []
     finally:
         gmail_fetch._imap_connect = orig
+        retryutil.sleep = orig_sleep                                   # STEP [26]
         os.environ.pop(config.GMAIL_ADDRESS_ENV, None)
         os.environ.pop(config.GMAIL_APP_PASSWORD_ENV, None)
 

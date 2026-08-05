@@ -233,3 +233,31 @@ NEWSLETTER_BOILERPLATE = (
 YOUTUBE_SOURCE_ID = 12            # STEP [16] only this channel gets enriched
 YT_TRANSCRIPT_MAX_CHARS = 1500    # STEP [16] enough to summarize from, not the whole video
 YT_MAX_ENRICH = 3                 # STEP [16] transcript fetches are slow; cap per run
+
+# ---------------------------------------------------------------------------
+# Retry / backoff for the three non-LLM network seams (Phase 4, Task 17)   # STEP [26]
+# ---------------------------------------------------------------------------
+# STEP [26] Policies (see src/retryutil.py for the shared delay+sleep primitives):
+# STEP [26] - LinkedIn POST (post_linkedin.py): STRICT. Retries ONLY on failures
+# STEP [26]   provably safe (never reached the server: refused/DNS/TLS-handshake/
+# STEP [26]   connect-timeout; plus HTTP 429). Ambiguous outcomes (read-timeout,
+# STEP [26]   connection reset, ALL 5xx, 201-no-id) make EXACTLY ONE attempt and
+# STEP [26]   surface an explicit "OUTCOME UNKNOWN — check your profile" message.
+# STEP [26]   400/401/403 fail fast. A duplicate live post is not quietly fixable,
+# STEP [26]   so the bias is: when in doubt, do NOT retry the post.
+# STEP [26] - Telegram (telegram_api.api_call + notify.send_draft): retry FREELY on
+# STEP [26]   network/5xx (a duplicate TG message is harmless noise; a missed draft
+# STEP [26]   is a lost day). Honor 429 retry_after. Fail fast on 400/401.
+# STEP [26] - Gmail IMAP (gmail_fetch.py): retry connect/login on transient socket
+# STEP [26]   errors (OSError). imaplib.IMAP4.error = auth = permanent, no retry.
+# STEP [26]   Always non-fatal (returns []). Gemini already has its own backoff in
+# STEP [26]   generate.py (LLM_RETRIES/LLM_BACKOFF_S) — left untouched.
+LINKEDIN_POST_MAX_ATTEMPTS = 3      # STEP [26] POST is not idempotent: keep small
+LINKEDIN_POST_BACKOFF_BASE_S = 2.0  # STEP [26] 2s, 4s between safe retries
+LINKEDIN_POST_BACKOFF_MAX_S = 16.0  # STEP [26] cap
+TELEGRAM_MAX_ATTEMPTS = 4           # STEP [26] send is safe to retry; be resilient
+TELEGRAM_BACKOFF_BASE_S = 2.0       # STEP [26]
+TELEGRAM_BACKOFF_MAX_S = 30.0       # STEP [26] cap (below the 30-min poll cadence)
+GMAIL_IMAP_MAX_ATTEMPTS = 3         # STEP [26] connect/login on transient socket
+GMAIL_IMAP_BACKOFF_BASE_S = 2.0     # STEP [26]
+GMAIL_IMAP_BACKOFF_MAX_S = 16.0     # STEP [26] cap

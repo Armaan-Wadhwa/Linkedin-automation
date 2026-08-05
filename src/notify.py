@@ -32,6 +32,7 @@ import os
 import requests
 
 import config
+import retryutil   # STEP [26] shared backoff delay + sleep seam
 
 log = logging.getLogger(__name__)
 
@@ -123,30 +124,67 @@ def send_draft(text, warnings, image_url=None):
         photo_sent = _send_photo(image_url, token, chat_id)                # STEP [17]
     image_url_in_text = image_url if (image_url and not photo_sent) else None  # STEP [17]
 
-    try:
-        resp = requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id,
-                  "text": _build_message(text, warnings, image_url_in_text),  # STEP [17]
-                  "reply_markup": _KEYBOARD},
-            timeout=config.TIMEOUT,
-        )
-        payload = resp.json()
-        if not payload.get("ok"):
-            log.error("send_draft: Telegram API error (HTTP %s): %s",
-                      resp.status_code,
-                      payload.get("description", "no description"))
+    # STEP [26] Retry the sendMessage freely: a duplicate draft message is
+    # STEP [26] harmless noise, a missed draft is a lost day. BUTTON-MESSAGE-ID
+    # STEP [26] INVARIANT: we return the id from the FIRST ok response. If attempt
+    # STEP [26] 1 silently succeeded but we never saw the response, the retry
+    # STEP [26] leaves an orphaned extra draft whose id is NOT stored — approve.py
+    # STEP [26] matches taps by the stored id, so a tap on the orphan can't post ->
+    # STEP [26] at most ONE LinkedIn post. Fail fast on 400/401 (bad token/chat).
+    send_payload = {
+        "chat_id": chat_id,
+        "text": _build_message(text, warnings, image_url_in_text),         # STEP [17] # STEP [26]
+        "reply_markup": _KEYBOARD,
+    }
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    for attempt in range(1, config.TELEGRAM_MAX_ATTEMPTS + 1):            # STEP [26]
+        try:
+            resp = requests.post(url, json=send_payload, timeout=config.TIMEOUT)
+            payload = resp.json()
+        except Exception as exc:  # noqa: BLE001 — network / malformed JSON -> retry
+            scrubbed = str(exc).replace(token, "<token>")
+            if attempt < config.TELEGRAM_MAX_ATTEMPTS:
+                wait = retryutil.backoff_delay(
+                    attempt, config.TELEGRAM_BACKOFF_BASE_S,
+                    config.TELEGRAM_BACKOFF_MAX_S)
+                log.debug("send_draft: attempt %d transient (%s: %s) — retry in %.1fs",
+                          attempt, type(exc).__name__, scrubbed, wait)
+                retryutil.sleep(wait)
+                continue
+            log.error("send_draft: %s: %s", type(exc).__name__, scrubbed)
             return False, None
-        message_id = payload["result"]["message_id"]
-        log.info("send_draft: draft sent for approval (message_id=%s, image=%s)",
-                 message_id, "photo" if photo_sent else
-                 ("url-in-text" if image_url_in_text else "none"))         # STEP [17]
-        return True, message_id
-    except Exception as exc:  # noqa: BLE001 — Telegram down must not crash the run
-        # requests exceptions embed the URL, which contains the bot token.
-        log.error("send_draft: %s: %s", type(exc).__name__,
-                  str(exc).replace(token, "<token>"))
+
+        if payload.get("ok"):
+            message_id = payload["result"]["message_id"]                  # STEP [26] first ok wins
+            log.info("send_draft: draft sent for approval (message_id=%s, image=%s%s)",
+                     message_id,
+                     "photo" if photo_sent else
+                     ("url-in-text" if image_url_in_text else "none"),
+                     f", attempt {attempt}" if attempt > 1 else "")         # STEP [26]
+            return True, message_id
+
+        err_code = payload.get("error_code")                              # STEP [26]
+        retry_after = (payload.get("parameters") or {}).get("retry_after")  # STEP [26]
+        desc = payload.get("description", "no description")
+        if err_code in (400, 401):                                         # STEP [26] permanent
+            log.error("send_draft: Telegram permanent error (HTTP %s): %s",
+                      err_code, desc)
+            return False, None
+        if attempt < config.TELEGRAM_MAX_ATTEMPTS:                         # STEP [26] transient -> retry
+            if err_code == 429 and retry_after:                            # STEP [26] honor server delay
+                wait = float(retry_after)
+            else:
+                wait = retryutil.backoff_delay(
+                    attempt, config.TELEGRAM_BACKOFF_BASE_S,
+                    config.TELEGRAM_BACKOFF_MAX_S)
+            log.debug("send_draft: attempt %d error_code=%s (%s) — retry in %.1fs",
+                      attempt, err_code, desc, wait)
+            retryutil.sleep(wait)
+            continue
+        log.error("send_draft: Telegram API error (HTTP %s): %s",
+                  resp.status_code, desc)
         return False, None
+    return False, None  # STEP [26] exhausted
 
 
 if __name__ == "__main__":

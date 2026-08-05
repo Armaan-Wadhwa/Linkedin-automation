@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 import requests
 
 import config   # STEP [10]
+import retryutil   # STEP [26] shared backoff delay + sleep seam
 
 log = logging.getLogger(__name__)
 
@@ -167,6 +168,93 @@ def _try_upload_image(token, person_urn, image_ref):                    # STEP [
     return image_urn
 
 
+# ---------------------------------------------------------------------------
+# STEP [26] Task 17 — POST retry classification. The LinkedIn POST is NOT
+# STEP [26] idempotent: a duplicate live post is public and not quietly fixable,
+# STEP [26] so we retry ONLY on failures provably safe (never reached the server)
+# STEP [26] and make EXACTLY ONE attempt on anything ambiguous. Permanent errors
+# STEP [26] (400/401/403) are handled at the HTTP-status layer in post().
+# ---------------------------------------------------------------------------
+# STEP [26] Marker approve.py detects so the Telegram announce can say "verify
+# STEP [26] your profile" instead of the generic "posting failed". Substring match
+# STEP [26] keeps the two modules decoupled (no shared state enum).
+UNKNOWN_OUTCOME_MARKER = "OUTCOME UNKNOWN —"
+
+
+def _walk_exc_chain(exc):                                                # STEP [26]
+    """Yield exc and its linked causes/contexts/args/reason (2-ish levels deep).
+    requests wraps urllib3 (MaxRetryError) which wraps the real builtin, so the
+    decisive type (e.g. ConnectionRefusedError) is often nested. We match on
+    type NAMES (no urllib3 import) so this survives a requests/urllib3 bump."""
+    seen = set()
+    stack = [exc]
+    while stack:
+        cur = stack.pop()
+        if cur is None or id(cur) in seen:
+            continue
+        seen.add(id(cur))
+        yield cur
+        for a in getattr(cur, "args", ()) or ():
+            if isinstance(a, BaseException):
+                stack.append(a)
+        for attr in ("__cause__", "__context__", "reason"):              # STEP [26] reason = urllib3 MaxRetryError
+            val = getattr(cur, attr, None)
+            if isinstance(val, BaseException):
+                stack.append(val)
+
+
+# Type NAMES that prove the request never reached LinkedIn's app server.
+_SAFE_NAMES = {"gaierror", "NameResolutionError", "NewConnectionError",   # STEP [26]
+               "ConnectionRefusedError", "ConnectTimeout"}
+_SAFE_MSG = ("failed to establish a new connection", "name or service not known",
+             "connection refused", "nodename nor servname",               # STEP [26]
+             "temporary failure in name resolution", "getaddrinfo failed",
+             "no address associated with hostname")
+# Type NAMES / messages that mean the request WAS sent and then dropped mid-flight.
+_AMBIG_NAMES = {"ReadTimeout", "ConnectionResetError", "ConnectionAbortedError",  # STEP [26]
+                "RemoteDisconnected", "ChunkedEncodingError", "IncompleteRead",
+                "TimeoutError"}
+_AMBIG_MSG = ("connection reset", "remote end closed",                    # STEP [26]
+              "connection aborted", "connection broken")
+
+
+def _root_is_establishment_failure(exc):                                 # STEP [26]
+    """True ONLY if exc's chain proves a pre-send establishment failure (DNS /
+    connect-refused / TLS-handshake). Reset / abort / remote-disconnect or
+    anything unclassifiable -> False (caller treats as ambiguous: do not retry)."""
+    found_safe = found_ambiguous = False
+    for item in _walk_exc_chain(exc):
+        name = type(item).__name__
+        low = str(item).lower()
+        if name in _AMBIG_NAMES or any(m in low for m in _AMBIG_MSG):
+            found_ambiguous = True
+        if name in _SAFE_NAMES or any(m in low for m in _SAFE_MSG):
+            found_safe = True
+    if found_ambiguous:
+        return False          # mid-flight signal present -> ambiguous (bias)
+    return found_safe         # True only on a clear establishment marker
+
+
+def _classify_post_exception(exc):                                       # STEP [26]
+    """'safe' (request provably never sent -> may retry) or 'ambiguous'
+    (request may have been sent/processed -> exactly ONE attempt, never retry).
+
+    # STEP [26] isinstance ORDER matters: ConnectTimeout and SSLError are BOTH
+    # STEP [26] subclasses of ConnectionError, so they must be tested FIRST.
+    # STEP [26] ConnectTimeout (connect phase) is safe; ReadTimeout (awaiting
+    # STEP [26] reply AFTER send) is ambiguous — requests distinguishes them and
+    # STEP [26] so do we, rather than catching Timeout broadly."""
+    if isinstance(exc, requests.exceptions.ConnectTimeout):               # STEP [26]
+        return "safe"
+    if isinstance(exc, requests.exceptions.ReadTimeout):                  # STEP [26]
+        return "ambiguous"
+    if isinstance(exc, requests.exceptions.SSLError):                     # STEP [26] TLS handshake
+        return "safe"
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "safe" if _root_is_establishment_failure(exc) else "ambiguous"
+    return "ambiguous"   # plain Timeout / unknown -> may have been sent
+
+
 def post(text, image_ref=None):
     """Publish `text` (with an optional image) to the author's LinkedIn feed.
 
@@ -243,31 +331,93 @@ def post(text, image_ref=None):
                  fake_id, bool(image_urn))
         return True, fake_id, bool(image_urn)
 
-    try:
-        resp = requests.post(config.LINKEDIN_POSTS_URL, json=body,
-                             headers=headers, timeout=config.TIMEOUT)
-    except Exception as exc:  # noqa: BLE001 — LinkedIn down must not crash the run
-        reason = _scrub(f"{type(exc).__name__}: {exc}", token)
-        log.error("post: request raised — %s", reason)
+    # STEP [26] Retry loop. The LinkedIn POST is NOT idempotent — a duplicate
+    # STEP [26] live post is public and not quietly fixable — so retry ONLY on
+    # STEP [26] failures provably safe (never reached the server) and make
+    # STEP [26] EXACTLY ONE attempt on anything ambiguous (read-timeout, reset,
+    # STEP [26] 5xx, 201-no-id), surfacing UNKNOWN_OUTCOME_MARKER so approve.py's
+    # STEP [26] announce says "verify your profile". 400/401/403 fail fast. Bias:
+    # STEP [26] when in doubt, do NOT retry the post. Constants in config;
+    # STEP [26] retryutil.sleep is the test-stubbed sleep seam (never real-sleeps).
+    for attempt in range(1, config.LINKEDIN_POST_MAX_ATTEMPTS + 1):       # STEP [26]
+        try:
+            resp = requests.post(config.LINKEDIN_POSTS_URL, json=body,
+                                 headers=headers, timeout=config.TIMEOUT)
+        except Exception as exc:  # noqa: BLE001 — classified below, never crashes
+            verdict = _classify_post_exception(exc)                       # STEP [26]
+            reason = _scrub(f"{type(exc).__name__}: {exc}", token)
+            if verdict == "ambiguous":                                    # STEP [26]
+                # Request may have been sent/processed. NEVER retry — record as
+                # terminal post_failed (approve.py never auto-retries it) and
+                # tell Harvey to verify his profile before re-triggering.
+                msg = (UNKNOWN_OUTCOME_MARKER +
+                       f" request raised ({reason}). The post MAY have been "
+                       "published — LinkedIn gave no confirmable response. "
+                       "CHECK YOUR LINKEDIN PROFILE before re-triggering.")
+                log.error("post: AMBIGUOUS outcome, NOT retrying — %s", msg)
+                return False, msg, False
+            if attempt < config.LINKEDIN_POST_MAX_ATTEMPTS:               # STEP [26] safe -> retry
+                wait = retryutil.backoff_delay(
+                    attempt, config.LINKEDIN_POST_BACKOFF_BASE_S,
+                    config.LINKEDIN_POST_BACKOFF_MAX_S)
+                log.warning("post: attempt %d/%d SAFE-retry (%s) — retry in %.1fs",
+                            attempt, config.LINKEDIN_POST_MAX_ATTEMPTS,
+                            reason, wait)
+                retryutil.sleep(wait)
+                continue
+            log.error("post: %d safe-retry attempt(s) all failed — %s",
+                      attempt, reason)
+            return False, f"all {attempt} safe-retry attempts failed ({reason})", False
+
+        if resp.status_code == 201:
+            post_id = resp.headers.get("x-restli-id")
+            if not post_id:
+                # 201 means the post was very likely CREATED; with no id we can
+                # neither confirm nor link it. One attempt, ambiguous message.
+                log.error("post: 201 returned but x-restli-id missing — outcome unknown")
+                return False, (UNKNOWN_OUTCOME_MARKER +                   # STEP [26]
+                               " LinkedIn returned 201 but no x-restli-id header; "
+                               "the post MAY be live. CHECK YOUR LINKEDIN PROFILE."), False
+            if attempt > 1:                                               # STEP [26]
+                log.info("post: published on attempt %d/%d",
+                         attempt, config.LINKEDIN_POST_MAX_ATTEMPTS)
+            log.info("post: published — linkedin_post_id=%s (len=%d, image=%s)",
+                     post_id, len(text), bool(image_urn))
+            return True, post_id, bool(image_urn)
+
+        # Non-201. Only resp.text[:200] (could be large), token-scrubbed.
+        snippet = _scrub(resp.text[:200], token) if resp.text else ""
+
+        if resp.status_code == 429 and attempt < config.LINKEDIN_POST_MAX_ATTEMPTS:  # STEP [26]
+            # 429 = LinkedIn rate-limited at the edge, request NOT processed ->
+            # provably safe to retry. (Not ambiguous: nothing was created.)
+            wait = retryutil.backoff_delay(
+                attempt, config.LINKEDIN_POST_BACKOFF_BASE_S,
+                config.LINKEDIN_POST_BACKOFF_MAX_S)
+            log.warning("post: HTTP 429 rate-limited (SAFE-retry) attempt %d/%d "
+                        "— retry in %.1fs", attempt,
+                        config.LINKEDIN_POST_MAX_ATTEMPTS, wait)
+            retryutil.sleep(wait)
+            continue
+
+        if 500 <= resp.status_code < 600:                                 # STEP [26]
+            # Ambiguous (Harvey's call, Task 17): a POST 5xx may mean "created
+            # then failed to respond" just as much as "rejected at the edge" —
+            # we can't prove either, so we do NOT retry. Outcome unknown.
+            msg = (UNKNOWN_OUTCOME_MARKER +
+                   f" HTTP {resp.status_code} ({snippet}). The post MAY have been "
+                   "published. CHECK YOUR LINKEDIN PROFILE before re-triggering.")
+            log.error("post: AMBIGUOUS HTTP %s, NOT retrying — %s",
+                      resp.status_code, msg)
+            return False, msg, False
+
+        # 4xx (400/401/403 and other) / non-201: permanent client error. Retrying
+        # wastes time and hides the real cause. One attempt, plain error.
+        reason = f"HTTP {resp.status_code}: {snippet}".strip()
+        log.error("post: LinkedIn rejected the post — %s", reason)
         return False, reason, False
 
-    if resp.status_code == 201:
-        post_id = resp.headers.get("x-restli-id")
-        if not post_id:
-            # 201 with no id is an API contract violation — treat as failure
-            # rather than claim success with a None we'd persist as the id.
-            log.error("post: 201 returned but x-restli-id header missing")
-            return False, "201 OK but x-restli-id header absent", False
-        log.info("post: published — linkedin_post_id=%s (len=%d, image=%s)",
-                 post_id, len(text), bool(image_urn))
-        return True, post_id, bool(image_urn)
-
-    # Non-201: capture a short reason. Only resp.text[:200] (could be large),
-    # scrubbed of the token in case it echoes back in an error body.
-    snippet = _scrub(resp.text[:200], token) if resp.text else ""
-    reason = f"HTTP {resp.status_code}: {snippet}".strip()
-    log.error("post: LinkedIn rejected the post — %s", reason)
-    return False, reason, False
+    return False, "post: retry loop exhausted without a result (unexpected)", False  # STEP [26]
 
 
 if __name__ == "__main__":

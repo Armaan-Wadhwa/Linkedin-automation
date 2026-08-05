@@ -68,7 +68,9 @@ def test_send_draft_failure_never_raises_or_leaks_token():
     try:
         boom = notify.requests.exceptions.ConnectionError(
             "HTTPSConnectionPool: /botTESTTOKEN123/sendMessage refused")
+        # STEP [26] send_draft retries now -> patch sleep to keep the suite fast
         with mock.patch.dict(os.environ, FAKE_ENV), \
+             mock.patch("retryutil.sleep"), \
              mock.patch.object(notify.requests, "post", side_effect=boom):
             ok, mid = notify.send_draft("draft", [])
     finally:

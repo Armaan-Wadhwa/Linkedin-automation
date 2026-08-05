@@ -30,7 +30,8 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 25).
+  comments (continue the numbering already in the files; next free number: 27).
+  (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit.)
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -61,6 +62,15 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   `generate_post()` returns text or None, never raises; `validate_post()`
   returns advisory warnings (length 1300–1900, hook ≤140 chars, no links,
   hashtags last line) — warnings inform, never block.
+- `src/retryutil.py` — `backoff_delay(attempt, base, cap)` + `sleep(seconds)`
+  (STEP 26, Task 17). The shared backoff math + the ONE sleep seam every
+  retrying site (`post_linkedin`, `telegram_api`, `notify`, `gmail_fetch`)
+  calls as `retryutil.sleep(...)`. Each site owns its own policy-specific loop
+  (LinkedIn classifies safe/ambiguous/permanent; Telegram/IMAP retry-freely);
+  the delay formula and the sleep target are defined once here. Tests patch
+  `retryutil.sleep` (single name) so the suite is instant and can assert exact
+  delays (e.g. Telegram 429 `retry_after`). Not used by `generate.llm_call`
+  (that has its own backoff; different semantics, untouched).
 - `src/main.py` — orchestrator; resolves `history.json` at repo root from its
   own path (CWD-independent); exit 0 = draft OK, exit 1 = failure (red run =
   alerting).
@@ -261,9 +271,9 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   (7) LinkedIn OAuth walkthrough + `post_linkedin.py`; wire into workflows.
 - Phase 3 — ✅ Gmail newsletters (IMAP, STEP 14); ✅ YouTube transcripts
   (Vaibhav source 12, STEP 16); fork tim-hilde feed (pending)
-- Phase 4 — hardening: retries audit, ✅ token-age alerts (STEP 24, Task 16 —
-  daily `token_check.yml`, age>50 + 401 probe + "no date recorded" alert),
-  prompt tuning
+- Phase 4 — hardening: ✅ retries audit (STEP 26, Task 17), ✅ token-age alerts
+  (STEP 24, Task 16 — daily `token_check.yml`, age>50 + 401 probe + "no date
+  recorded" alert), prompt tuning
   (watch: filler intro lines, paragraph spacing in drafts). **STEP 19 done:
   web-selection BACKEND seam** (`select_build.py`, `emit_candidates.py`,
   `--from-selection` entry, two `workflow_dispatch` workflows). **STEP 20
@@ -284,6 +294,35 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   inherited from a GitHub default into one the YAML states explicitly, and
   makes the red run name its cause. Not verified against the Actions UI (no
   `gh`, private repo) — conclusion rests on documented Actions semantics.
+  **STEP 26 done (Task 17): retries audit.** Three non-LLM network seams now
+  retry; one shared backoff helper (no copy-pasted loops). LinkedIn POST =
+  STRICT (see standing rule below); Telegram `api_call` + `notify.send_draft`
+  retry freely on transient/5xx, honor 429 `retry_after`, fail fast on 400/401,
+  and the button-`message_id` invariant holds across a retry (the finally-
+  confirmed id is stored); Gmail IMAP retries connect on `OSError`, treats
+  `imaplib.IMAP4.error` (auth) as permanent, stays non-fatal. Constants in
+  `config.py` (`*_MAX_ATTEMPTS` / `*_BACKOFF_*`); sleeps via `retryutil.sleep`
+  (tests patch one name). `test_retries.py`: 18 checks with explicit call-count
+  assertions proving no double-post path. Full suite green except the known
+  pre-existing `test_normalize_strips_webp_params`.
+
+## Standing rule — LinkedIn POST retry safety (STEP 26, Task 17)
+The LinkedIn POST is **not idempotent** — a duplicate live post is public and
+not quietly fixable. So `post_linkedin.post()` retries ONLY on failures provably
+safe (the request never reached the server): `ConnectTimeout`, `SSLError`
+(TLS handshake), `ConnectionError` whose root cause is an establishment failure
+(`ConnectionRefusedError`/`gaierror`/`NewConnectionError`), and HTTP **429**.
+Anything **ambiguous** (request may have been sent/processed) makes **exactly
+ONE attempt** and returns `UNKNOWN_OUTCOME_MARKER` so the Telegram announce
+says "verify your profile": `ReadTimeout`, connection reset/abort/remote-
+disconnect, **all HTTP 5xx**, and `201`-with-no-`x-restli-id`. **400/401/403**
+are permanent and fail fast. Bias, codified: **when in doubt, do NOT retry the
+post.** An ambiguous outcome is recorded as the terminal `post_failed` state
+(the "unknown" *message* distinguishes it); `post_failed` is never auto-retried
+(only `approved` re-posts), so it can never double-post. Gemini's existing
+`generate.llm_call` retry is untouched (different semantics). RSS fetches,
+YouTube transcripts, and the userinfo probe were audited and left as-is (they
+already degrade safely; retrying them adds risk/noise for no real gain).
 
 ## Harvey-side setup (do once, manually)
 - **Set the `LINKEDIN_TOKEN_ISSUED_UTC` secret (STEP 24):** a **timezone-aware**

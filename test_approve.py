@@ -345,7 +345,9 @@ def test_api_call_never_leaks_token():
     try:
         boom = telegram_api.requests.exceptions.ConnectionError(
             "HTTPSConnectionPool: /botSECRET123/getUpdates refused")
-        with mock.patch.object(telegram_api.requests, "post", side_effect=boom):
+        # STEP [26] api_call retries now -> patch sleep to keep the suite fast
+        with mock.patch("retryutil.sleep"), \
+             mock.patch.object(telegram_api.requests, "post", side_effect=boom):
             result = telegram_api.api_call("getUpdates", {}, "SECRET123")
     finally:
         telegram_api.log.removeHandler(handler)

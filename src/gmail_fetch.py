@@ -47,6 +47,7 @@ from email.utils import parseaddr, parsedate_to_datetime              # STEP [14
 from html.parser import HTMLParser                                    # STEP [14]
 
 import config                                                         # STEP [14]
+import retryutil                                                      # STEP [26]
 
 log = logging.getLogger(__name__)
 
@@ -274,12 +275,37 @@ def fetch_newsletter_stories():                                       # STEP [14
     # STEP [14] released in finally, guarded against the login-failure path."""
     imap = None
     try:
-        try:
-            imap = _imap_connect()                # may raise -> imap stays None
-        except Exception as exc:                  # noqa: BLE001
-            log.warning("gmail: IMAP login failed (%s: %s) — newsletters skipped",
-                        type(exc).__name__, exc)
-            return []
+        # STEP [26] Retry the connect/login on TRANSIENT socket errors only.
+        # STEP [26] OSError covers DNS failure, connection refused, and socket
+        # STEP [26] timeout (IMAP4_SSL opens the socket in open()). An
+        # STEP [26] imaplib.IMAP4.error (auth / "INVALID CREDENTIALS") or a
+        # STEP [26] RuntimeError (missing secrets, from _imap_connect) is NOT an
+        # STEP [26] OSError -> escapes this loop to the outer except below -> NOT
+        # STEP [26] retried (a wrong app password won't fix itself; retrying login
+        # STEP [26] risks looking like a brute-force). Always non-fatal: exhaustion -> [].
+        for attempt in range(1, config.GMAIL_IMAP_MAX_ATTEMPTS + 1):    # STEP [26]
+            try:
+                imap = _imap_connect()                # may raise -> imap stays None
+                break
+            except OSError as exc:                    # STEP [26] transient connect -> retry
+                if attempt < config.GMAIL_IMAP_MAX_ATTEMPTS:
+                    wait = retryutil.backoff_delay(
+                        attempt, config.GMAIL_IMAP_BACKOFF_BASE_S,
+                        config.GMAIL_IMAP_BACKOFF_MAX_S)
+                    log.warning("gmail: IMAP connect transient (%s: %s) — "
+                                "retry %d/%d in %.1fs",
+                                type(exc).__name__, exc, attempt,
+                                config.GMAIL_IMAP_MAX_ATTEMPTS, wait)
+                    retryutil.sleep(wait)
+                    continue
+                log.warning("gmail: IMAP connect failed after %d attempts "
+                            "(%s: %s) — newsletters skipped",
+                            attempt, type(exc).__name__, exc)
+                return []
+            except Exception as exc:        # STEP [26] auth (IMAP4.error) / RuntimeError (missing creds) -> permanent, NO retry
+                log.warning("gmail: IMAP login failed (%s: %s) — newsletters skipped",
+                            type(exc).__name__, exc)
+                return []
 
         # Select the label as a mailbox (Gmail labels are selectable mailboxes).
         # STEP [14] A wrong/empty label returns OK with count 0 — treat as no stories,

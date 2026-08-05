@@ -220,11 +220,18 @@ def _post_approved_draft():                                            # STEP [1
 
     # STEP [10] The re-read is the ordering-hazard guard made mechanical: we
     # STEP [10] NEVER post against a status read earlier in the run — only
-    # STEP [10] against a fresh disk read taken in the same moment as the post.
+    # STEP [10] against a fresh disk reading taken in the same moment as the post.
     # STEP [10] If the file changed under us, we refuse and mark post_failed.
     # STEP [10] 'posted' is terminal on success; 'post_failed' is terminal on
     # STEP [10] failure — a later run may retry ONLY if this save also failed
-    # STEP [10] (status then stays 'approved'). One attempt per run, no loop.
+    # STEP [10] (status then stays 'approved'). One call per run, no loop here.
+    # STEP [26] post_linkedin.post() now retries INTERNALLY on provably-safe
+    # STEP [26] failures (refused/DNS/TLS/connect-timeout/429); approve still
+    # STEP [26] calls it ONCE. An AMBIGUOUS outcome (read-timeout/reset/5xx/
+    # STEP [26] 201-no-id) returns post_linkedin.UNKNOWN_OUTCOME_MARKER and is
+    # STEP [26] recorded here as terminal 'post_failed' — only 'approved' ever
+    # STEP [26] re-posts, so an ambiguous outcome can NEVER be auto-retried into
+    # STEP [26] a double post. The 'unknown' message tells Harvey to verify.
     # STEP [12] Returns (ok, post_id, error, image_attempted, image_attached)."""
     fresh = _load_state()
     if fresh is None or fresh is _MISSING:
@@ -306,7 +313,17 @@ def _announce_outcome(token, chat_id, ok, post_id, error,              # STEP [1
         if nudge:
             text += "\n" + nudge
     else:
-        text = "⚠ Approved but posting failed — see logs"
+        # STEP [26] An ambiguous outcome (post_linkedin.UNKNOWN_OUTCOME_MARKER —
+        # STEP [26] read-timeout / connection reset / 5xx / 201-no-id) means the
+        # STEP [26] post MAY be live; the message must say so and point Harvey at
+        # STEP [26] his profile, not just "see logs". A plain post_failed still
+        # STEP [26] reads as before. (status is post_failed either way; only the
+        # STEP [26] Telegram wording differs — and it can never auto-retry.)
+        if error and post_linkedin.UNKNOWN_OUTCOME_MARKER in str(error):  # STEP [26]
+            text = ("⚠ Posting outcome UNKNOWN — LinkedIn may have published "
+                    "the post. CHECK YOUR LINKEDIN PROFILE before re-triggering.")
+        else:
+            text = "⚠ Approved but posting failed — see logs"
         if error:
             text += f"\n{str(error)[:200]}"
     try:
