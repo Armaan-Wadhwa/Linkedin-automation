@@ -41,7 +41,13 @@ import select_build                                                    # STEP [1
 # ---------------------------------------------------------------------------
 # Helpers — story factory + the central stub harness
 # ---------------------------------------------------------------------------
-_NOW = datetime(2026, 8, 4, 9, 0, tzinfo=timezone.utc)                 # STEP [19] fixed for determinism
+# STEP [28] Real now, NOT a pinned date. rank.dedupe_only scores stories against
+# STEP [28] the LIVE clock (now=None -> datetime.now) and drops any older than
+# STEP [28] MAX_STORY_AGE_H (48h); a fixed past _NOW made every test story stale
+# STEP [28] ~48h after STEP 19 landed, so dedupe_only returned [] and the whole
+# STEP [28] suite started failing. Real now keeps test stories at age ~0h
+# STEP [28] regardless of when the suite runs. No test asserts on a specific date.
+_NOW = datetime.now(timezone.utc)                                      # STEP [28]
 
 
 def _story(title, source_id=1, source_name="OpenAI News", priority=6,

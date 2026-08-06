@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 28).
+  comments (continue the numbering already in the files; next free number: 29).
   (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit.)
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
@@ -269,6 +269,16 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
 - GitHub Actions cron is best-effort (delays up to ~50 min; occasional drops).
 - Newsletter HTML parsing (Phase 3) is fragile — always non-fatal.
 - Gemini free-tier limits/models shift — that's why the single `llm_call` seam.
+- **Test fixtures with a pinned calendar date rot against `rank`'s 48h age gate.**
+  `rank.dedupe_only` scores stories against the LIVE clock (`now=None` →
+  `datetime.now`) and discards any older than `MAX_STORY_AGE_H` (48h).
+  `test_select.py` hardcoded `_NOW = datetime(2026,8,4,...)` for "determinism",
+  so ~48h after STEP 19 landed every test story went stale, `dedupe_only`
+  returned `[]`, and the whole suite started failing (the alphabetical-first
+  test aborted the no-try/except runner, masking the rest). Fixed STEP 28:
+  `_NOW = datetime.now(timezone.utc)`. Rule: any test that feeds stories through
+  `dedupe_only`/`dedupe_and_rank` MUST use a recent (or live-now) `published`,
+  never a pinned past date.
 
 ## Phase status
 - ✅ Phase 0 — source verification (18→20 sources, health-tested; `test_sources.py`)
