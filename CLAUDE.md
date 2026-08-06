@@ -30,7 +30,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 27).
+  comments (continue the numbering already in the files; next free number: 28).
   (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit.)
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
@@ -59,9 +59,16 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   day's stories); 30-day retention with pruning; corrupt file → empty + warn.
 - `src/generate.py` — `llm_call(prompt)` is the ONLY LLM seam
   (`LLM_PROVIDER` env: "gemini" default / "ollama"); retries w/ backoff;
-  `generate_post()` returns text or None, never raises; `validate_post()`
-  returns advisory warnings (length 1300–1900, hook ≤140 chars, no links,
-  hashtags last line) — warnings inform, never block.
+  **two-phase retry (STEP 27):** phase 1 (`LLM_RETRIES`/`LLM_BACKOFF_S`) retries
+  ANY error exactly as before; phase 2 (`LLM_OVERLOAD_EXTRA_RETRIES`/
+  `LLM_BACKOFF_OVERLOAD_S`) runs ONLY when phase 1 ended on a 503 —
+  `_is_transient_overload(exc)` gates entry — so a Gemini capacity spike is
+  ridden out over ~3.5 min (30s+90s settles) instead of dying at ~25s. Non-503
+  errors still fail fast after phase 1. Still uses `time.sleep` directly (NOT
+  `retryutil.sleep` — the STEP 26 LLM-seam-is-separate invariant holds; tests
+  patch `generate.time.sleep`). `generate_post()` returns text or None, never
+  raises; `validate_post()` returns advisory warnings (length 1300–1900,
+  hook ≤140 chars, no links, hashtags last line) — warnings inform, never block.
 - `src/retryutil.py` — `backoff_delay(attempt, base, cap)` + `sleep(seconds)`
   (STEP 26, Task 17). The shared backoff math + the ONE sleep seam every
   retrying site (`post_linkedin`, `telegram_api`, `notify`, `gmail_fetch`)
@@ -218,8 +225,10 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 
 ## Verified facts (from live testing — don't "fix" these)
 - Gemini free-tier model that works: **`gemini-3.5-flash`**. 503s under load
-  are common; the existing retry/backoff handles them. Keep model name in
-  config only.
+  are common — a SUSTAINED spike (not a one-off) burned all 3 phase-1 attempts
+  within ~25s on 2026-08-06 and failed the day, which is why STEP 27 added the
+  503-only phase-2 tail. The model is still correct (the 503 is Google's overload
+  response, not retirement). Keep model name in config only.
 - Reddit `.rss` needs the personal feed token (`REDDIT_FEED_PARAMS` =
   `feed=...&user=...` from reddit.com/prefs/feeds) AND 6s spacing; expect
   429s from GitHub Actions datacenter IPs anyway — non-fatal by design.
@@ -305,6 +314,21 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   (tests patch one name). `test_retries.py`: 18 checks with explicit call-count
   assertions proving no double-post path. Full suite green except the known
   pre-existing `test_normalize_strips_webp_params`.
+  **STEP 27 done (Task 17b): 503 overload tail in the LLM seam.** The
+  2026-08-06 daily run failed because a SUSTAINED Gemini 503 "high demand"
+  spike outlasted the ~25s phase-1 window (3 attempts at t=0, +5s, +25s all
+  503). `generate.llm_call` now has a two-phase retry: phase 1 is the unchanged
+  `LLM_RETRIES`/`LLM_BACKOFF_S` loop (retries ANY error, fast-fail preserved);
+  phase 2 (`LLM_OVERLOAD_EXTRA_RETRIES=2` / `LLM_BACKOFF_OVERLOAD_S=[30,90]`)
+  runs ONLY when phase 1 ended on a 503 (`_is_transient_overload` gates entry —
+  probes `.code`/`.status_code`/`.response.status_code` then a `"503" + overload-
+  keyword` string fallback, version-tolerant across genai SDK reshuffles). So a
+  real spike is ridden out over ~3.5 min (5 total calls) instead of dying at 25s.
+  `gemini-3.5-flash` unchanged (503 = overload, not retirement). Still `time.sleep`
+  directly (STEP 26 invariant holds). `test_generate.py`: 11 checks (detector
+  branches + call-count invariants: non-overload fast-fail at 3 calls, all-503
+  exhausts at 5, spike clears on last call, phase-2 flips-to-non-overload bails).
+  Worst case ~3.5 min in Gemini fits daily.yml's `timeout-minutes: 15`.
 
 ## Standing rule — LinkedIn POST retry safety (STEP 26, Task 17)
 The LinkedIn POST is **not idempotent** — a duplicate live post is public and

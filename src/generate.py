@@ -99,14 +99,52 @@ def _call_ollama(prompt):
 _PROVIDERS = {"gemini": _call_gemini, "ollama": _call_ollama}
 
 
+def _is_transient_overload(exc):                                            # STEP [27]
+    """True if `exc` looks like a server-side capacity/overload failure (503 /
+    # STEP [27] Service Unavailable) — the ONE case where waiting longer actually
+    # STEP [27] helps. Gemini's google-genai SDK raises a ServerError whose str()
+    # STEP [27] is '503 UNAVAILABLE. {...high demand...}'; Ollama's requests path
+    # STEP [27] raises an HTTPError with a .response carrying status_code 503.
+    # STEP [27] Probe every shape (attribute then string) so this stays robust
+    # STEP [27] across SDK version reshuffles — the live 2026-08-06 failure log
+    # STEP [27] confirms '503' appears in str(exc) as a final fallback. Non-503
+    # STEP [27] errors return False so llm_call still fails fast on real problems."""
+    code = getattr(exc, "code", None)                                       # STEP [27]
+    if code == 503:                                                         # STEP [27]
+        return True
+    status = getattr(exc, "status_code", None)                              # STEP [27]
+    if status == 503:                                                       # STEP [27]
+        return True
+    resp = getattr(exc, "response", None)                                   # STEP [27]
+    if resp is not None and getattr(resp, "status_code", None) == 503:      # STEP [27]
+        return True
+    text = str(exc)                                                         # STEP [27]
+    low = text.lower()                                                      # STEP [27]
+    return "503" in text and ("unavailable" in low or "high demand" in low)  # STEP [27]
+
+
 def llm_call(prompt):
-    """The single LLM seam. Retries with backoff; raises after final failure."""
+    """The single LLM seam. Retries with backoff; raises after final failure.
+
+    # STEP [27] Two-phase retry. Phase 1 (LLM_RETRIES attempts, LLM_BACKOFF_S
+    # STEP [27] waits) retries ANY failure — this loop is unchanged from the
+    # STEP [27] original. Phase 2 (LLM_OVERLOAD_EXTRA_RETRIES attempts,
+    # STEP [27] LLM_BACKOFF_OVERLOAD_S waits) runs ONLY when phase 1 ended on a
+    # STEP [27] 503/overload (_is_transient_overload gates entry). A Gemini
+    # STEP [27] capacity spike outlasts the ~25s phase-1 window; the long settles
+    # STEP [27] (30s, 90s) span a real multi-minute spike instead of failing the
+    # STEP [27] day. Genuine (non-overload) errors still fail fast after phase 1.
+    # STEP [27] Still uses time.sleep directly (NOT retryutil.sleep): the STEP 26
+    # STEP [27] invariant keeps the LLM seam's backoff separate from the non-LLM
+    # STEP [27] sites (different semantics; tests patch generate.time.sleep)."""
     provider = os.environ.get(config.LLM_PROVIDER_ENV, "gemini").lower()
     call = _PROVIDERS.get(provider)
     if call is None:
         raise RuntimeError(f"Unknown LLM provider '{provider}' "
                            f"(expected one of {sorted(_PROVIDERS)})")
     last_exc = None
+
+    # STEP [27] Phase 1: original retry budget, retries ANY error (unchanged).
     for attempt in range(1 + config.LLM_RETRIES):
         if attempt:
             wait = config.LLM_BACKOFF_S[min(attempt - 1, len(config.LLM_BACKOFF_S) - 1)]
@@ -118,6 +156,30 @@ def llm_call(prompt):
             last_exc = exc
             log.warning("llm_call: %s attempt %d failed: %s: %s",
                         provider, attempt + 1, type(exc).__name__, exc)
+
+    # STEP [27] Phase 2: overload-only tail. Entered only if phase 1 exhausted on
+    # STEP [27] a 503 — a capacity spike the short phase-1 window couldn't clear.
+    # STEP [27] A non-overload last_exc skips this and fails fast at the raise
+    # STEP [27] below. If an overload attempt fails with a NON-overload error, the
+    # STEP [27] while-condition re-checks last_exc next pass and exits (no point
+    # WAITING through a spike budget on a problem waiting won't fix).
+    overload_idx = 0                                                   # STEP [27]
+    while (_is_transient_overload(last_exc)                            # STEP [27]
+           and overload_idx < config.LLM_OVERLOAD_EXTRA_RETRIES):
+        wait = config.LLM_BACKOFF_OVERLOAD_S[                          # STEP [27]
+            min(overload_idx, len(config.LLM_BACKOFF_OVERLOAD_S) - 1)]
+        log.warning("llm_call: %s overload retry %d/%d in %ds (503 spike)",     # STEP [27]
+                    provider, overload_idx + 1,
+                    config.LLM_OVERLOAD_EXTRA_RETRIES, wait)
+        time.sleep(wait)                                               # STEP [27]
+        try:
+            return call(prompt)                                        # STEP [27]
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc                                             # STEP [27]
+            log.warning("llm_call: %s overload attempt %d failed: %s: %s",         # STEP [27]
+                        provider, overload_idx + 1, type(exc).__name__, exc)
+        overload_idx += 1                                              # STEP [27]
+
     raise RuntimeError(f"llm_call: all attempts failed ({provider})") from last_exc
 
 

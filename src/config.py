@@ -123,6 +123,16 @@ LLM_TEMPERATURE = 0.7                  # STEP [3]
 LLM_TIMEOUT = 120                      # STEP [3] seconds (local models can be slow)
 LLM_RETRIES = 2                        # STEP [3] retries after the first attempt
 LLM_BACKOFF_S = [5, 20]                # STEP [3] wait before retry 1, retry 2
+# STEP [27] Phase-2 overload tail. Gemini's 503 "high demand" capacity spikes
+# STEP [27] outlast the ~25s phase-1 window above (LLM_RETRIES + LLM_BACKOFF_S):
+# STEP [27] a live 2026-08-06 run burned all 3 phase-1 attempts (t=0, +5s, +25s)
+# STEP [27] inside ONE spike and failed the day. These EXTRA retries run ONLY when
+# STEP [27] phase 1 ended on a 503 (generate._is_transient_overload gates entry),
+# STEP [27] with long settles (30s, 90s) that span a real multi-minute spike. A
+# STEP [27] non-overload error still fails fast after phase 1 -> no behavior change
+# STEP [27] for genuine failures; only the transient-capacity case gets more rope.
+LLM_OVERLOAD_EXTRA_RETRIES = 2         # STEP [27] 503-only, on top of LLM_RETRIES
+LLM_BACKOFF_OVERLOAD_S = [30, 90]      # STEP [27] settle before overload retry 1, 2
 MIN_STORIES_TO_GENERATE = 2            # STEP [3] below this, still generate but warn loudly
 
 # STEP [3] post-quality bounds used for validation warnings (not hard failures)
