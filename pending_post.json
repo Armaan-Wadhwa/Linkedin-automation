@@ -1,3 +1,8 @@
 {
-  "status": "superseded"
+  "draft": "Are we about to pay over $300 for a screenless, hockey puck-sized AI speaker designed by Jony Ive?\n\nThe hardware landscape for artificial intelligence is shifting rapidly, from consumer devices to the silicon powering the data centers.\n\n🔋 Former Apple designer Jony Ive is reportedly collaborating with OpenAI on a battery-powered, doughnut-shaped smart speaker without a display. The hockey puck-sized device is expected to launch in 2027 with a price tag over $300.\n\n⚙️ Anthropic has decided to design its own hardware to power Claude, aiming to scale up its operations while actively reducing its dependence on Nvidia chips.\n\n🧠 OpenAI has updated its model lineup, introducing an improved GPT-5.6 Sol with better accuracy and consistency in ChatGPT, alongside expanded free access to GPT-5.6 Luna for unlimited daily chats.\n\n⚠️ Early user feedback on Anthropic's Opus 5 is highly mixed, with some developers comparing its performance to Sonnet 4.6 and struggling with troubleshooting steps like clearing the global claude.md file.\n\nAs developers, we are seeing a clear divergence. Companies are trying to lock down the entire stack, from custom chips up to physical consumer hardware.\n\nAt the same time, the rapid release cycle of incremental model updates like GPT-5.6 is forcing us to constantly re-evaluate our prompts and configurations.\n\nWould you buy a dedicated, screenless AI speaker for your desk, or do you prefer keeping your workflows entirely on your existing devices?\n\n#AI #OpenAI #Anthropic #Hardware #LLM",
+  "created_utc": "2026-08-07T04:45:19.415879+00:00",
+  "telegram_message_id": 57,
+  "status": "awaiting_approval",
+  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Gemini_vacation_itineraries.max-600x600.format-webp.webp",
+  "image_source": "story"
 }
