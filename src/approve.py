@@ -162,6 +162,31 @@ def _find_decision(updates, chat_id, message_id):
     return rejects[0] if rejects else matches[0]
 
 
+def _stale_tap_message_id(updates, chat_id, message_id):              # STEP [29]
+    """message_id of a ✅/❌ tap from THIS chat that landed on a DIFFERENT
+    # STEP [29] (older/superseded) draft than the one now pending, else None.
+    # STEP [29] Old drafts keep live buttons, so such a tap is otherwise
+    # STEP [29] invisible to Harvey (warning only in the Actions log) and is then
+    # STEP [29] deleted by _confirm_updates — this lets run() nudge him instead
+    # STEP [29] of failing silently. Same string compare as _find_decision
+    # STEP [29] (125-131): never a second normalization."""
+    want = str(chat_id).strip()                                       # STEP [29]
+    for upd in updates:                                               # STEP [29]
+        cq = upd.get("callback_query")                                # STEP [29]
+        if not cq or cq.get("data") not in DECISIONS:                 # STEP [29] only our ✅/❌
+            continue                                                  # STEP [29]
+        message = cq.get("message") or {}                            # STEP [29]
+        chat = message.get("chat") or {}                             # STEP [29]
+        sender = cq.get("from") or {}                                # STEP [29]
+        if str(chat.get("id")).strip() != want:                      # STEP [29]
+            continue                                                  # STEP [29]
+        if str(sender.get("id")).strip() != want:                    # STEP [29]
+            continue                                                  # STEP [29]
+        if message.get("message_id") != message_id:                  # STEP [29] tapped an old draft
+            return message.get("message_id")                         # STEP [29]
+    return None                                                      # STEP [29]
+
+
 def _confirm_updates(updates, token):                                 # STEP [18]
     """Confirm all read updates so the getUpdates queue stays clean. Calls
     getUpdates with offset=max_update_id+1 — the standard Telegram pattern.
@@ -496,6 +521,19 @@ def run():
 
     decision = _find_decision(updates, chat_id, message_id)
     if decision is None:
+        stale_id = _stale_tap_message_id(updates, chat_id, message_id)  # STEP [29]
+        if stale_id is not None:                                        # STEP [29] a ✅/❌ on an OLD draft
+            try:                                                        # STEP [29] never fatal
+                telegram_api.api_call("sendMessage", {                  # STEP [29]
+                    "chat_id": chat_id,                                 # STEP [29]
+                    "text": ("⚠️ That ✅/❌ was on an old digest (message "  # STEP [29]
+                             f"{stale_id}). Approve the LATEST digest "  # STEP [29]
+                             f"message ({message_id}) instead — older "  # STEP [29]
+                             "drafts' buttons no longer work."),        # STEP [29]
+                    }, token, quiet=True)                               # STEP [29]
+            except Exception as exc:  # noqa: BLE001                     # STEP [29]
+                log.warning("run: stale-tap nudge failed (%s) — "       # STEP [29]
+                            "non-fatal", exc)                           # STEP [29]
         _confirm_updates(updates, token)                               # STEP [18] clean queue
         log.info("run: no decision yet")
         return 0

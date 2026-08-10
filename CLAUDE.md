@@ -30,8 +30,9 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 29).
-  (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit.)
+  comments (continue the numbering already in the files; next free number: 30).
+  (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit;
+  29 = approve.py stale-tap Telegram nudge.)
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,

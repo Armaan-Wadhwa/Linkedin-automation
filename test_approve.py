@@ -252,6 +252,29 @@ def test_foreign_callbacks_are_ignored():
         assert post_calls == [], (name, "ignored callback must not post")
 
 
+def test_stale_tap_on_old_draft_nudges_instead_of_silent():           # STEP [29]
+    # ✅ on an OLD/superseded draft (msg 999) while msg 42 is pending: no match,
+    # no post, state unchanged — but Harvey now gets a Telegram nudge instead of
+    # the old silent drop (the whole point of STEP 29).
+    with tempfile.TemporaryDirectory() as tmp:
+        rc, saved, calls, post_calls = _run(
+            tmp, _state(), [_callback(1, "approve", message_id=999)])
+    assert rc == 0, rc
+    assert saved["status"] == "awaiting_approval", saved
+    assert post_calls == [], "stale tap must not post"
+    nudges = [p["text"] for m, p in calls
+              if m == "sendMessage" and "old digest" in p["text"]]
+    assert len(nudges) == 1 and "999" in nudges[0] and "42" in nudges[0], nudges
+
+    # A matching ✅ posts and must NOT trigger the stale-tap nudge.
+    with tempfile.TemporaryDirectory() as tmp:
+        _, _, calls2, post_calls2 = _run(tmp, _state(), [_callback(1, "approve")])
+    assert post_calls2, "matching tap still posts"
+    assert not [p for m, p in calls2
+                if m == "sendMessage" and "old digest" in p["text"]], \
+        "matching tap must not nudge"
+
+
 def test_unreachable_telegram_leaves_draft_pending():
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "pending_post.json")
