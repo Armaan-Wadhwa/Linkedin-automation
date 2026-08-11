@@ -2,7 +2,11 @@
   "draft": "Tech giants are choosing energy access over emissions targets as the race for AI compute reaches a critical tipping point.\n\nAs a developer tracking daily AI developments, the friction between infrastructure demands and model performance is becoming harder to ignore.\n\nHere are the key updates from the field today:\n\n🔋 Amazon has backed its first off-the-grid data center, partnering with a power plant that risks becoming the top source of US climate pollution to secure energy for its AI operations.\n\n🤖 Anthropic's newly released Opus 5 model is receiving sharp criticism from early adopters who report it is argumentative, clumsy in communication, and prone to more errors than its predecessor.\n\n🛠️ A developer has open-sourced a public seed kit on GitHub under MiningTheSkies/agentic-company-seed, allowing users to run an agentic company operating doctrine through Claude Code.\n\n💼 OpenAI CFO Sarah Friar has outlined five operational lessons for building an AI-native finance department, targeting automated forecasting and clearer AI ROI metrics.\n\nWe are seeing massive physical trade-offs on the infrastructure side, while on the software side, the latest model iterations are not always hitting the mark with users.\n\nFor those of us building systems every day, these shifts show that scaling AI is as much a challenge of resource management and user experience as it is of raw compute.\n\nAre you seeing a decline in reasoning and communication quality with the latest model releases, or are these just early deployment hurdles?\n\n#AI #SoftwareEngineering #Claude #Amazon #OpenAI",
   "created_utc": "2026-08-11T04:08:09.610643+00:00",
   "telegram_message_id": 66,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/08/GettyImages-2267221283-1152x648.jpg",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-11T04:08:28.067203+00:00",
+  "callback_update_id": 523661478,
+  "posted_utc": "2026-08-11T04:08:30.454905+00:00",
+  "linkedin_post_id": "urn:li:share:7492794046491529216"
 }
