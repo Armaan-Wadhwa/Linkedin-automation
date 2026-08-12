@@ -1,12 +1,8 @@
 {
-  "draft": "Tech giants are choosing energy access over emissions targets as the race for AI compute reaches a critical tipping point.\n\nAs a developer tracking daily AI developments, the friction between infrastructure demands and model performance is becoming harder to ignore.\n\nHere are the key updates from the field today:\n\n🔋 Amazon has backed its first off-the-grid data center, partnering with a power plant that risks becoming the top source of US climate pollution to secure energy for its AI operations.\n\n🤖 Anthropic's newly released Opus 5 model is receiving sharp criticism from early adopters who report it is argumentative, clumsy in communication, and prone to more errors than its predecessor.\n\n🛠️ A developer has open-sourced a public seed kit on GitHub under MiningTheSkies/agentic-company-seed, allowing users to run an agentic company operating doctrine through Claude Code.\n\n💼 OpenAI CFO Sarah Friar has outlined five operational lessons for building an AI-native finance department, targeting automated forecasting and clearer AI ROI metrics.\n\nWe are seeing massive physical trade-offs on the infrastructure side, while on the software side, the latest model iterations are not always hitting the mark with users.\n\nFor those of us building systems every day, these shifts show that scaling AI is as much a challenge of resource management and user experience as it is of raw compute.\n\nAre you seeing a decline in reasoning and communication quality with the latest model releases, or are these just early deployment hurdles?\n\n#AI #SoftwareEngineering #Claude #Amazon #OpenAI",
-  "created_utc": "2026-08-11T04:08:09.610643+00:00",
-  "telegram_message_id": 66,
-  "status": "posted",
-  "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/08/GettyImages-2267221283-1152x648.jpg",
-  "image_source": "story",
-  "decided_utc": "2026-08-11T04:08:28.067203+00:00",
-  "callback_update_id": 523661478,
-  "posted_utc": "2026-08-11T04:08:30.454905+00:00",
-  "linkedin_post_id": "urn:li:share:7492794046491529216"
+  "draft": "The race for scale is accelerating: two competing AI platforms have officially crossed the 1 billion monthly user milestone.\n\nAs a software engineer, watching the infrastructure scale to support this user base while security and regulatory demands catch up is highly instructive. Here is a breakdown of the latest developments.\n\n📈 Both Google Gemini and OpenAI ChatGPT have now surpassed 1 billion monthly users. This milestone makes Gemini the fastest-growing product in Google's history, representing the 14th time a Google product has reached this scale.\n\n🔒 Anthropic is implementing invisible, machine-readable watermarks in Claude. To comply with European AI transparency regulations, Claude-generated text will carry embedded watermarks, and files will include digitally signed provenance metadata where supported.\n\n🛡️ OpenAI is expanding its enterprise footprint by making its Daybreak models available on Amazon Bedrock. This release allows teams to integrate Daybreak's specialized cybersecurity capabilities directly into AWS enterprise security workflows.\n\nWith billions of active users, the industry's focus is steadily shifting from raw model capabilities to practical distribution, compliance, and cloud security.\n\nAs these tools become ubiquitous, do you think invisible watermarking will be effective for compliance, or will we need more visible indicators?\n\n#AI #LLM #Claude #Gemini #OpenAI",
+  "created_utc": "2026-08-12T04:30:36.557206+00:00",
+  "telegram_message_id": 69,
+  "status": "awaiting_approval",
+  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/1BSS.max-600x600.format-webp.webp",
+  "image_source": "story"
 }
