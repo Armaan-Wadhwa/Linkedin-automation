@@ -2,7 +2,11 @@
   "draft": "The global race for AI supremacy just accelerated to a weekly cycle, and the pressure on US labs is hitting a breaking point.\n\nHere is what is happening in the AI landscape today.\n\n🤖 A mystery model named Ox Alpha has appeared for free with a 1M context window and multimodal capabilities, outperforming GPT-5.6 Sol and Fable 5 Max in early tests. Fingerprinting tests match its tokenizer and video encoder exactly with GLM-5.3, suggesting a Chinese lab upgraded a frontier model in just seven days.\n\n💼 The tech talent market is experiencing an AI layoff paradox as companies restructure. Block recently cut around 4,000 roles and Oracle's headcount fell, yet data shows companies are actively hiring humans back as they transition to new workflows.\n\n💻 Developers are raising concerns over whether Anthropic's Opus 4.8 / 5 Fast Mode degrades overall coding quality. Early user feedback suggests the model might be taking shortcuts to optimize speed rather than utilizing full computing power.\n\nFrom my perspective, this rapid pace of development is forcing major labs to reconsider their release schedules. With Chinese labs improving frontier models in days instead of months, competitors can no longer afford to sit on unreleased models.\n\nIf you are using Opus 5, have you noticed a drop in code quality when Fast Mode is enabled?\n\n#AI #LLM #Anthropic #GenerativeAI #SoftwareEngineering",
   "created_utc": "2026-08-23T04:22:09.609422+00:00",
   "telegram_message_id": 93,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://res.cloudinary.com/dy0wihjuo/image/upload/v1787458850/Gemini_Generated_Image_7webns7webns7web_cv3j3x.png",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-23T04:23:44.694055+00:00",
+  "callback_update_id": 523661479,
+  "posted_utc": "2026-08-23T04:23:48.073421+00:00",
+  "linkedin_post_id": "urn:li:share:7497146549634969600"
 }
