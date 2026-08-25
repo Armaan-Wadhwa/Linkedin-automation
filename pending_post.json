@@ -2,7 +2,11 @@
   "draft": "Entry-level employment in AI-impacted fields has dropped by 19 percent, according to a new Stanford study.\n\nThis shift is changing how we think about junior developer roles and career entry points.\n\nHere are the key updates from across the industry today.\n\n📊 A new Stanford study reveals that AI is hitting entry-level roles the hardest, with young employment in AI-impacted fields down 19% compared to more AI-resistant occupations.\n\n💻 OpenAI has made GPT-5.6 available in Kiro, aiming to improve price-performance for developers looking to plan, build, review, and test software.\n\n🔒 Users report that Anthropic account bans can result in permanent loss of chat histories, as the current data export option only yields a users.json metadata file rather than a conversations.json file.\n\nThese updates highlight both the rapid integration of advanced models into our workflows and the growing pains of relying on third-party platforms for critical context.\n\nAs developers, we have to balance the efficiency of new tools with the realities of data ownership and shifting job markets.\n\nHow are you adapting your development workflows to ensure you do not lose critical context if a platform account is locked?\n\n#SoftwareDevelopment #ArtificialIntelligence #OpenAI #Claude #TechCareers",
   "created_utc": "2026-08-25T03:36:35.971096+00:00",
   "telegram_message_id": 98,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/08/GettyImages-2211086231-1152x648.jpg",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-25T05:26:47.652681+00:00",
+  "callback_update_id": 523661487,
+  "posted_utc": "2026-08-25T05:26:50.603794+00:00",
+  "linkedin_post_id": "urn:li:share:7497887188806729728"
 }
