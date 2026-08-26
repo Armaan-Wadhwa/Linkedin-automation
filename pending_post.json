@@ -1,12 +1,8 @@
 {
-  "draft": "Entry-level employment in AI-impacted fields has dropped by 19 percent, according to a new Stanford study.\n\nThis shift is changing how we think about junior developer roles and career entry points.\n\nHere are the key updates from across the industry today.\n\n📊 A new Stanford study reveals that AI is hitting entry-level roles the hardest, with young employment in AI-impacted fields down 19% compared to more AI-resistant occupations.\n\n💻 OpenAI has made GPT-5.6 available in Kiro, aiming to improve price-performance for developers looking to plan, build, review, and test software.\n\n🔒 Users report that Anthropic account bans can result in permanent loss of chat histories, as the current data export option only yields a users.json metadata file rather than a conversations.json file.\n\nThese updates highlight both the rapid integration of advanced models into our workflows and the growing pains of relying on third-party platforms for critical context.\n\nAs developers, we have to balance the efficiency of new tools with the realities of data ownership and shifting job markets.\n\nHow are you adapting your development workflows to ensure you do not lose critical context if a platform account is locked?\n\n#SoftwareDevelopment #ArtificialIntelligence #OpenAI #Claude #TechCareers",
-  "created_utc": "2026-08-25T03:36:35.971096+00:00",
-  "telegram_message_id": 98,
-  "status": "posted",
-  "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/08/GettyImages-2211086231-1152x648.jpg",
-  "image_source": "story",
-  "decided_utc": "2026-08-25T05:26:47.652681+00:00",
-  "callback_update_id": 523661487,
-  "posted_utc": "2026-08-25T05:26:50.603794+00:00",
-  "linkedin_post_id": "urn:li:share:7497887188806729728"
+  "draft": "How much context is too much when a single 400k prompt can eat 10% of your weekly LLM budget in seconds?\n\nAs developers, we are constantly balancing context window sizes against API costs and rate limits. This week's updates show how fast the tooling and infrastructure are shifting.\n\nHere is what is happening in the engineering space today:\n\n⚠️ Anthropic users are reporting hitting session limits almost instantly when running Fable 5 on High. One developer on a Max plan saw their weekly usage jump from 4% to 14% after a single UI-edit prompt with a 400k context window.\n\n💻 Claude Desktop now supports Ollama. You can configure the desktop app to use Ollama as a third-party gateway provider, making it possible to run open models directly within the Claude interface.\n\n🛠️ OpenAI launched a new Admin plugin for ChatGPT Work and Codex. This tool allows team admins to analyze workspace usage, manage member permissions, adjust user limits, and act on admin requests.\n\n🎙️ Google added intelligent dictation to Gemini for macOS. The feature runs desktop-wide, letting you speak naturally to input text into any active window on your machine.\n\nWith open models now running inside Claude Desktop and context costs spiking on proprietary models, the line between local and cloud workflows is blurring.\n\nAre you planning to migrate some of your Claude workflows to local open models using Ollama?\n\n#AI #LLM #Claude #Ollama #OpenAI",
+  "created_utc": "2026-08-26T03:41:32.193664+00:00",
+  "telegram_message_id": 101,
+  "status": "awaiting_approval",
+  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Gemini_app_macOS.max-600x600.format-webp.webp",
+  "image_source": "story"
 }
