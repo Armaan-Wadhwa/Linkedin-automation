@@ -2,7 +2,11 @@
   "draft": "AI models are recommending code that no one actually owns, exposing major security gaps in corporate networks.\n\nAs developers, we rely on LLMs to accelerate our daily workflows, but recent security and hardware updates highlight how quickly this landscape is shifting.\n\nHere are the key developments from across the industry today.\n\n⚠️ Security researchers found 227 install commands in corporate documents pointing to unowned code packages recommended by Claude, Codex, and Hermes.\n\n🏛️ A federal judge ruled the Pentagon's blacklisting of Anthropic unconstitutional, resolving a lawsuit filed in a California district court back in March.\n\n🔌 Anthropic introduced a new hardware standard with a standardized driver interface designed to let AI agents communicate with and control physical devices.\n\n📚 Google launched an Expert Intelligence feature for Gemini Notebook, allowing users to import purchased Google Play Books to generate plans, infographics, and AI podcasts.\n\n⚡ Google also released Gemini Omni 1.1 Flash via APIs, providing developers with more direct control when building their applications.\n\nThe discovery of unowned code recommendations in corporate docs is a stark reminder of how easily hallucinated package names can turn into supply-chain vulnerabilities.\n\nHow is your team auditing the package dependencies and code snippets suggested by your AI assistants?\n\n#LLM #SoftwareEngineering #AppSec #Gemini #Claude",
   "created_utc": "2026-08-28T05:38:29.455866+00:00",
   "telegram_message_id": 109,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Omni_1-1_Flash_hero.max-600x600.format-webp.webp",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-28T08:22:45.796724+00:00",
+  "callback_update_id": 523661505,
+  "posted_utc": "2026-08-28T08:22:48.172404+00:00",
+  "linkedin_post_id": "urn:li:share:7499018636578340864"
 }
