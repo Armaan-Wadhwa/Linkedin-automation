@@ -1,12 +1,8 @@
 {
-  "draft": "Google just dropped Gemini 3.5 Transcribe, hitting a 2.6% word error rate across over 85 languages.\n\nAs a developer tracking the daily shifts in the AI ecosystem, today brings some highly consequential technical and legal updates. Here is what you need to know.\n\n🎙️ Google released Gemini 3.5 Transcribe, splitting the model into two distinct endpoints. The streaming endpoint delivers sub-second transcription with a 4.0% word error rate, while the batch endpoint cuts costs in half, retains speaker diarization, and boasts a 2.6% word error rate with 70% faster finalization than Chirp 3.\n\n⚖️ A federal judge ruled that the government blacklisting of Anthropic is illegal. The legal battle stemmed from Anthropic's refusal to develop or support technologies for lethal autonomous warfare and mass surveillance.\n\n🍎 Anthropic launched Claude for Teachers as a free Enterprise offering for schools and districts. The platform gives administrators central management tools and provides educators with curriculum resources mapped directly to academic standards in all 50 U.S. states.\n\nThe split-endpoint approach from Google is a smart architectural move for voice agent pipelines. Separating low-latency streaming from high-accuracy batch processing solves a major optimization headache for developers.\n\nMeanwhile, the legal ruling on Anthropic sets a massive precedent for safety-first AI vendors who choose to opt out of defense and surveillance contracts.\n\nWhich endpoint architecture are you currently using for your speech-to-text pipelines?\n\n#AI #LLM #Gemini #Anthropic #SpeechToText",
-  "created_utc": "2026-08-29T04:51:45.279700+00:00",
-  "telegram_message_id": 113,
-  "status": "posted",
-  "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/03/claude-app-1152x648.jpg",
-  "image_source": "story",
-  "decided_utc": "2026-08-29T04:53:22.463612+00:00",
-  "callback_update_id": 523661506,
-  "posted_utc": "2026-08-29T04:53:25.314730+00:00",
-  "linkedin_post_id": "urn:li:share:7499328331381858304"
+  "draft": "SpaceX just acquired Cursor, triggering immediate shifts in the developer AI landscape.\n\nHere is what is happening in AI engineering today.\n\n🚀 OpenAI is winding down its contract to provide OpenAI models to the Cursor editor following Cursor's acquisition by SpaceX.\n\n📉 Anthropic is ending its extended use limits for Claude on August 31st, meaning users will get less usage for the same price.\n\n🐞 Developers are reporting significant frustration with Opus 5, noting missing tasks and buggy code that require redoing work up to 10 times when fable credits run out.\n\n🎵 StemDeck has launched on GitHub as a free, open-source, and local AI stem separator.\n\n💻 A new community experiment shows how to turn LLM memory systems into a functional tool for program analysis.\n\nAs software engineers, our day-to-day productivity is increasingly tied to the stability of external AI platforms. When acquisitions occur or API limits are suddenly adjusted, it directly impacts our development speed and operational costs.\n\nBuilding redundancy into our local environments—using open-source tools and maintaining the ability to swap backend models programmatically—is becoming a necessity rather than an afterthought.\n\nWe must focus on building resilient systems that do not break when a single provider changes their terms of service.\n\nHow are you adapting your development workflow to handle changing API limits and shifting model access?\n\n#AI #SoftwareEngineering #LLM #OpenAI #Claude",
+  "created_utc": "2026-08-29T09:25:21.719325+00:00",
+  "telegram_message_id": 115,
+  "status": "awaiting_approval",
+  "image_url": null,
+  "image_source": null
 }
