@@ -2,7 +2,11 @@
   "draft": "Google just dropped Gemini 3.5 Transcribe, hitting a 2.6% word error rate across over 85 languages.\n\nAs a developer tracking the daily shifts in the AI ecosystem, today brings some highly consequential technical and legal updates. Here is what you need to know.\n\n🎙️ Google released Gemini 3.5 Transcribe, splitting the model into two distinct endpoints. The streaming endpoint delivers sub-second transcription with a 4.0% word error rate, while the batch endpoint cuts costs in half, retains speaker diarization, and boasts a 2.6% word error rate with 70% faster finalization than Chirp 3.\n\n⚖️ A federal judge ruled that the government blacklisting of Anthropic is illegal. The legal battle stemmed from Anthropic's refusal to develop or support technologies for lethal autonomous warfare and mass surveillance.\n\n🍎 Anthropic launched Claude for Teachers as a free Enterprise offering for schools and districts. The platform gives administrators central management tools and provides educators with curriculum resources mapped directly to academic standards in all 50 U.S. states.\n\nThe split-endpoint approach from Google is a smart architectural move for voice agent pipelines. Separating low-latency streaming from high-accuracy batch processing solves a major optimization headache for developers.\n\nMeanwhile, the legal ruling on Anthropic sets a massive precedent for safety-first AI vendors who choose to opt out of defense and surveillance contracts.\n\nWhich endpoint architecture are you currently using for your speech-to-text pipelines?\n\n#AI #LLM #Gemini #Anthropic #SpeechToText",
   "created_utc": "2026-08-29T04:51:45.279700+00:00",
   "telegram_message_id": 113,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/03/claude-app-1152x648.jpg",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-29T04:53:22.463612+00:00",
+  "callback_update_id": 523661506,
+  "posted_utc": "2026-08-29T04:53:25.314730+00:00",
+  "linkedin_post_id": "urn:li:share:7499328331381858304"
 }
