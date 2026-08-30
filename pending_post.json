@@ -2,7 +2,11 @@
   "draft": "AI agents just moved from digital screens to physical hardware in a matter of hours, not months.\n\nAs developers, we are used to AI manipulating code and text. But the transition to physical systems has always been bottlenecked by custom integrations. This week's updates show how quickly that boundary is dissolving.\n\n🤖 Anthropic introduced a research preview of the Model Hardware Standard (MHS). This shared driver specification allows AI agents to safely operate physical devices over MCP. In testing, Carnegie Mellon went from raw equipment to a finished dose-response curve in eight hours, while QuEra's laser relock rate improved from 58% to 99.3% over 700 trials.\n\n🎥 Google AI released Gemini Omni 1.1 Flash, an update to its native multimodal video generation model. The system now supports 4K upscaling and first/last frame control to pin camera movement. For scene extensions, it can now analyze up to 10 seconds of prior context rather than just a single final frame.\n\n⚖️ On the legal front, Sony Music and Warner Chappell have filed a lawsuit against Anthropic in the US District Court for the Northern District of California. The publishers are seeking up to $150,000 per copyrighted work, alongside up to $25,000 for each instance where copyright identification data was removed.\n\nThe physical integration of AI agents via standardized drivers like MHS could shift how we build hardware-software interfaces. Standardizing the driver layer means we spend less time writing custom APIs for instruments and more time on the orchestration layer.\n\nWhich of these updates do you think will have the most immediate impact on your current development workflow?\n\n#AI #SoftwareEngineering #Robotics #LLM #Anthropic",
   "created_utc": "2026-08-30T08:27:24.573622+00:00",
   "telegram_message_id": 117,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/01/STK269_ANTHROPIC_2_A.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-08-30T08:28:37.152793+00:00",
+  "callback_update_id": 523661508,
+  "posted_utc": "2026-08-30T08:28:40.394565+00:00",
+  "linkedin_post_id": "urn:li:share:7499744889019170817"
 }
