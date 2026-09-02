@@ -595,6 +595,130 @@ def test_announce_no_image_mention_when_not_attempted():
     assert not any("image" in t.lower() for t in sends), "must not mention image"
 
 
+
+# ---------------------------------------------------------------------------
+# STEP [32] Long polling. getUpdates was one timeout=0 snapshot, so a tap that
+# STEP [32] landed a second later waited for the next scheduled run (measured
+# STEP [32] worst case: 8h26m). These checks pin the loop's shape: it stops the
+# STEP [32] moment a tap matches, it advances offset between polls (without which
+# STEP [32] it would spin), and it is bounded twice.
+# ---------------------------------------------------------------------------
+def _run_batches(tmp, batches, state=None,                             # STEP [32]
+                 post_result=(True, "urn:li:share:1", False)):         # STEP [32]
+    """Like _run, but getUpdates returns `batches` one call at a time (a None
+    entry simulates Telegram going unreachable mid-poll). Records kwargs too,
+    so http_timeout can be asserted. Returns (rc, saved, calls, post_calls)
+    where calls is [(method, payload, kwargs)]."""                     # STEP [32]
+    path = os.path.join(tmp, "pending_post.json")                      # STEP [32]
+    with open(path, "w", encoding="utf-8") as fh:                      # STEP [32]
+        json.dump(state or _state(), fh)                               # STEP [32]
+    calls, post_calls, seq = [], [], list(batches)                     # STEP [32]
+
+    def fake_api(method, payload, token, **kwargs):                    # STEP [32]
+        calls.append((method, payload, kwargs))                        # STEP [32]
+        if method != "getUpdates":                                     # STEP [32]
+            return {"ok": True}                                        # STEP [32]
+        # STEP [32] _confirm_updates passes limit=1; never consume a batch for it.
+        if payload.get("limit") == 1:                                  # STEP [32]
+            return []                                                  # STEP [32]
+        return seq.pop(0) if seq else []                               # STEP [32]
+
+    def fake_post(text, image_ref=None):                               # STEP [32]
+        post_calls.append(text)                                        # STEP [32]
+        return post_result                                             # STEP [32]
+
+    env = {config.TELEGRAM_TOKEN_ENV: "TESTTOKEN",                     # STEP [32]
+           config.TELEGRAM_CHAT_ID_ENV: CHAT_ID}                       # STEP [32]
+    with mock.patch.dict(os.environ, env), \
+         mock.patch.object(approve, "PENDING_POST_PATH", path), \
+         mock.patch.object(approve.telegram_api, "api_call", side_effect=fake_api), \
+         mock.patch.object(approve.post_linkedin, "post", side_effect=fake_post):
+        rc = approve.run()                                             # STEP [32]
+    with open(path, encoding="utf-8") as fh:                           # STEP [32]
+        saved = json.load(fh)                                          # STEP [32]
+    return rc, saved, calls, post_calls                                # STEP [32]
+
+
+def _polls(calls):                                                     # STEP [32]
+    """Only the long-poll getUpdates calls (not _confirm_updates' limit=1)."""
+    return [p for m, p, _ in calls                                     # STEP [32]
+            if m == "getUpdates" and p.get("limit") != 1]              # STEP [32]
+
+
+def test_longpoll_stops_at_the_first_match():                          # STEP [32]
+    # A tap already queued -> exactly ONE poll. The run must not sit out the
+    # rest of its budget once it has what it came for.
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        rc, saved, calls, post_calls = _run_batches(                   # STEP [32]
+            tmp, [[_callback(1, "approve")]])                          # STEP [32]
+    assert rc == 0, rc                                                 # STEP [32]
+    assert saved["status"] == "posted", saved                          # STEP [32]
+    assert len(post_calls) == 1, post_calls                            # STEP [32] exactly one post
+    assert len(_polls(calls)) == 1, _polls(calls)                      # STEP [32]
+
+
+def test_longpoll_catches_a_tap_in_a_later_batch():                    # STEP [32]
+    # THE point of the change: nothing queued when the run starts, the tap
+    # arrives while it waits. Under the old timeout=0 snapshot this was a miss.
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        rc, saved, calls, post_calls = _run_batches(                   # STEP [32]
+            tmp, [[], [], [_callback(7, "approve")]])                  # STEP [32]
+    assert rc == 0, rc                                                 # STEP [32]
+    assert saved["status"] == "posted", saved                          # STEP [32]
+    assert len(post_calls) == 1, post_calls                            # STEP [32]
+    assert len(_polls(calls)) == 3, _polls(calls)                      # STEP [32] stopped on arrival
+
+
+def test_longpoll_advances_offset_between_polls():                     # STEP [32]
+    # Without this the same unconfirmed updates come back every call, the poll
+    # returns instantly, and the loop spins for the whole budget.
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        _, _, calls, _ = _run_batches(                                 # STEP [32]
+            tmp, [[_callback(4, "approve", message_id=999)],           # STEP [32] no match
+                  [_callback(9, "cancel")]])                           # STEP [32] no match
+    polls = _polls(calls)                                              # STEP [32]
+    assert "offset" not in polls[0], polls[0]                          # STEP [32] first read is unfiltered
+    assert polls[1]["offset"] == 5, polls[1]                           # STEP [32] max(4)+1
+    assert polls[2]["offset"] == 10, polls[2]                          # STEP [32] max(9)+1
+    assert polls[3]["offset"] == 10, polls[3]                          # STEP [32] empty batch -> unchanged
+
+
+def test_longpoll_is_bounded():                                        # STEP [32]
+    # Telegram returning instantly forever must not become a hot loop.
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        rc, saved, calls, post_calls = _run_batches(tmp, [])           # STEP [32] always []
+    expected = config.APPROVE_LONGPOLL_BUDGET_S // config.APPROVE_LONGPOLL_S + 1  # STEP [32]
+    assert len(_polls(calls)) == expected, len(_polls(calls))          # STEP [32]
+    assert rc == 0 and saved["status"] == "awaiting_approval", saved   # STEP [32]
+    assert post_calls == [], post_calls                                # STEP [32]
+
+
+def test_longpoll_http_timeout_exceeds_server_wait():                  # STEP [32]
+    # A 50s server-side wait under the default 20s client timeout would fail
+    # every poll and burn the STEP 26 retry budget on non-errors.
+    assert config.TELEGRAM_LONGPOLL_HTTP_TIMEOUT > config.APPROVE_LONGPOLL_S  # STEP [32]
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        _, _, calls, _ = _run_batches(tmp, [[_callback(1, "approve")]])  # STEP [32]
+    payload, kwargs = [(p, kw) for m, p, kw in calls                   # STEP [32]
+                       if m == "getUpdates" and p.get("limit") != 1][0]  # STEP [32]
+    assert payload["timeout"] == config.APPROVE_LONGPOLL_S, payload    # STEP [32]
+    assert kwargs["http_timeout"] == config.TELEGRAM_LONGPOLL_HTTP_TIMEOUT, kwargs  # STEP [32]
+
+
+def test_longpoll_outage_midway_keeps_what_it_read():                  # STEP [32]
+    # Telegram dies after handing over a stale tap: the nudge must still go out
+    # rather than the batch being thrown away.
+    with tempfile.TemporaryDirectory() as tmp:                         # STEP [32]
+        rc, saved, calls, post_calls = _run_batches(                   # STEP [32]
+            tmp, [[_callback(3, "approve", message_id=999)], None])    # STEP [32]
+    assert rc == 0, rc                                                 # STEP [32]
+    assert saved["status"] == "awaiting_approval", saved               # STEP [32]
+    assert post_calls == [], "a stale tap must never post"             # STEP [32]
+    nudges = [p["text"] for m, p, _ in calls                           # STEP [32]
+              if m == "sendMessage" and "old digest" in p["text"]]     # STEP [32]
+    assert len(nudges) == 1, nudges                                    # STEP [32]
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

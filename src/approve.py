@@ -38,6 +38,7 @@ import logging
 import os
 import sys
 import tempfile                                                     # STEP [11]
+import time                                                          # STEP [32] long-poll budget clock
 from datetime import datetime, timedelta, timezone
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -491,18 +492,65 @@ def run():
     if not token:
         return 1
 
-    updates = telegram_api.api_call(
-        "getUpdates",
-        {"limit": config.TELEGRAM_UPDATE_LIMIT,                       # STEP [18] no offset
-         "timeout": 0,
-         "allowed_updates": ["callback_query", "message"]},           # STEP [11]
-        token)
-    if updates is None:
-        # Transient must never become terminal: write nothing, retry next run.
-        log.error("run: could not reach Telegram — leaving the draft pending")
-        return 0
+    # STEP [32] LONG POLL, replacing a single timeout=0 snapshot. Each call now
+    # STEP [32] blocks server-side until an update arrives, so a tap made while
+    # STEP [32] this run is alive is acted on in seconds instead of waiting for
+    # STEP [32] the next scheduled run (measured worst case: 8h26m).
+    # STEP [32]
+    # STEP [32] offset ADVANCES past each batch, and that is not optional: with no
+    # STEP [32] offset every call re-returns the same unconfirmed updates, so one
+    # STEP [32] stale unmatched callback sitting in the queue would make every
+    # STEP [32] poll return instantly and spin a hot loop for the whole budget.
+    # STEP [32] Advancing it also confirms each batch as it is read — the same
+    # STEP [32] exposure as today's end-of-run _confirm_updates, which discards
+    # STEP [32] unmatched updates anyway.
+    # STEP [32]
+    # STEP [32] Batches accumulate into ONE list so _find_override_photo,
+    # STEP [32] _find_decision, _stale_tap_message_id and _confirm_updates below
+    # STEP [32] all see the full picture and stay exactly as they were.
+    updates = []                                                       # STEP [32]
+    offset = None                                                      # STEP [32]
+    polls = 0                                                          # STEP [32]
+    decision = None                                                    # STEP [32]
+    deadline = time.monotonic() + config.APPROVE_LONGPOLL_BUDGET_S     # STEP [32]
+    # STEP [32] Second bound on purpose: the clock alone trusts Telegram to honor
+    # STEP [32] the server-side wait. If it ever returns instantly instead, this
+    # STEP [32] caps the damage at a handful of calls rather than thousands.
+    max_polls = config.APPROVE_LONGPOLL_BUDGET_S // config.APPROVE_LONGPOLL_S + 1  # STEP [32]
+    while True:                                                        # STEP [32]
+        payload = {"limit": config.TELEGRAM_UPDATE_LIMIT,              # STEP [32]
+                   "timeout": config.APPROVE_LONGPOLL_S,               # STEP [32]
+                   "allowed_updates": ["callback_query", "message"]}   # STEP [11] # STEP [32]
+        if offset is not None:                                         # STEP [32]
+            payload["offset"] = offset                                 # STEP [32]
+        batch = telegram_api.api_call(                                 # STEP [32]
+            "getUpdates", payload, token,                              # STEP [32]
+            http_timeout=config.TELEGRAM_LONGPOLL_HTTP_TIMEOUT)        # STEP [32]
+        polls += 1                                                     # STEP [32]
+        if batch is None:                                              # STEP [32]
+            if updates:                                                # STEP [32]
+                log.warning("run: Telegram unreachable mid-poll — acting on "  # STEP [32]
+                            "the %d update(s) already read", len(updates))     # STEP [32]
+                break                                                  # STEP [32]
+            # Transient must never become terminal: write nothing, retry next run.
+            log.error("run: could not reach Telegram — leaving the draft pending")
+            return 0
+        if batch:                                                      # STEP [32]
+            updates.extend(batch)                                      # STEP [32]
+            offset = max(u.get("update_id", 0) for u in batch) + 1     # STEP [32]
+            # STEP [32] Only rescan when something new arrived: _find_decision
+            # STEP [32] logs a scan summary and the STEP 16 warnings, and an
+            # STEP [32] empty long-poll timeout has nothing new to say.
+            decision = _find_decision(updates, chat_id, message_id)    # STEP [32]
+            if decision is not None:                                   # STEP [32]
+                break                                                  # STEP [32] tap found, stop waiting
+        if polls >= max_polls or time.monotonic() >= deadline:         # STEP [32]
+            break                                                      # STEP [32] budget spent
 
-    # STEP [11] Photo override: scan BEFORE the decision scan. A photo is NOT an
+    # STEP [11] Photo override: applied BEFORE the decision is acted on. A photo
+    # STEP [32] is NOT an approval (the loop above finds the decision; this still
+    # STEP [32] runs first so an approved post picks up the override image).
+    # STEP [11] A photo is NOT an
     # STEP [11] approval (✅ still required), but if found it beats the story
     # STEP [11] image. Saved even when no ✅ exists yet — Harvey may send the
     # STEP [11] photo first, tap later. A download failure is non-fatal: the
@@ -519,8 +567,7 @@ def run():
                 log.warning("photo: override downloaded but state save failed "
                             "— may not persist to the next run")
 
-    decision = _find_decision(updates, chat_id, message_id)
-    if decision is None:
+    if decision is None:                                               # STEP [32] set by the loop above
         stale_id = _stale_tap_message_id(updates, chat_id, message_id)  # STEP [29]
         if stale_id is not None:                                        # STEP [29] a ✅/❌ on an OLD draft
             try:                                                        # STEP [29] never fatal

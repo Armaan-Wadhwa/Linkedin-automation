@@ -320,6 +320,125 @@ def test_newsletter_layer_capped_at_two_in_top():
     assert all(s["source_id"] == config.NEWSLETTER_SOURCE_ID for s in top)
 
 
+
+# ---------------------------------------------------------------------------
+# STEP [35] Title quality. Modelled on the real beehiiv issue that exposed this:
+# STEP [35] one email yielded 8 "stories" of which 3 were headlines and the rest
+# STEP [35] were mid-sentence fragments, CTA buttons, ads and poll widgets.
+# ---------------------------------------------------------------------------
+BEEHIIV_HTML = """<html><body>
+<h2><a href="https://nl.example/story1">Anthropic ships Fable 5.1 with better reasoning</a></h2>
+<p><span>The new model <a href="https://nl.example/inline1">came out ahead of Opus 5 on every benchmark</a>
+that was published this week.</span></p>
+<h2><a href="https://nl.example/story2">OpenAI model hits a Critical Cyber capability limit</a></h2>
+<p><span>Red-teamers <a href="https://nl.example/inline2">found two unknown flaws</a> in the release.</span></p>
+<div><a href="https://nl.example/cta">Try Fable 5.1 Now</a></div>
+<div><a href="https://nl.example/ad">Book more calls with Aimfox Avatars</a></div>
+<div><a href="https://nl.example/poll">Absolute fire, loved this issue</a></div>
+<div><a href="https://nl.example/footer">Powered by beehiiv today</a></div>
+</body></html>"""
+
+# Same content, headline markup removed — the Vaibhav Sisinty / TLDR shape.
+NO_MARKUP_HTML = """<html><body>
+<div><a href="https://nl.example/story1">Anthropic ships Fable 5.1 with better reasoning</a></div>
+<div><a href="https://nl.example/inline1">came out ahead of Opus 5 on every benchmark</a></div>
+<div><a href="https://nl.example/inline2">found two unknown flaws in the release</a></div>
+<div><a href="https://nl.example/frag">the falls (and the fire) explained</a></div>
+<div><a href="https://nl.example/cta">Watch the on-demand recording</a></div>
+<div><a href="https://nl.example/ad">Book more calls with Aimfox Avatars</a></div>
+<div><a href="https://nl.example/money">$35B cloud deal with Nvidia-backed Lambda</a></div>
+<div><a href="https://nl.example/keep">Apple Watch gets an AI upgrade this autumn</a></div>
+</body></html>"""
+
+
+def test_headline_markup_tier_wins():
+    """A newsletter that marks its headlines: trust the markup, drop the rest."""
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(BEEHIIV_HTML, "Beehiiv NL", NOW)]
+    assert titles == [
+        "Anthropic ships Fable 5.1 with better reasoning",
+        "OpenAI model hits a Critical Cyber capability limit",
+    ], titles
+
+
+def test_headline_tier_drops_inline_fragments_and_ads():
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(BEEHIIV_HTML, "Beehiiv NL", NOW)]
+    for bad in ("came out ahead of Opus 5 on every benchmark",
+                "found two unknown flaws",
+                "Try Fable 5.1 Now",
+                "Book more calls with Aimfox Avatars",
+                "Absolute fire, loved this issue"):
+        assert bad not in titles, f"'{bad}' survived the headline tier"
+
+
+def test_no_markup_falls_back_to_text_heuristic():
+    """No headline markup anywhere -> tier 2 keeps the plain-<div>/<li> layouts
+    (TLDR, The Rundown, Vaibhav Sisinty) working instead of zeroing them out."""
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(NO_MARKUP_HTML, "Plain NL", NOW)]
+    assert "Anthropic ships Fable 5.1 with better reasoning" in titles, titles
+    assert len(titles) == 3, titles
+
+
+def test_lowercase_start_dropped_as_fragment():
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(NO_MARKUP_HTML, "Plain NL", NOW)]
+    for bad in ("came out ahead of Opus 5 on every benchmark",
+                "found two unknown flaws in the release",
+                "the falls (and the fire) explained"):
+        assert bad not in titles, f"fragment '{bad}' was not dropped"
+
+
+def test_cta_prefix_matches_first_word_only():
+    """'Watch the recording' is a button; 'Apple Watch gets...' is a headline.
+    A substring match would kill both — hence first-word-only."""
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(NO_MARKUP_HTML, "Plain NL", NOW)]
+    assert "Watch the on-demand recording" not in titles, titles
+    assert "Book more calls with Aimfox Avatars" not in titles, titles
+    assert "Apple Watch gets an AI upgrade this autumn" in titles, titles
+
+
+def test_non_letter_first_char_survives():
+    """islower() is the test, not isupper() — a $-led headline is still a headline."""
+    titles = [s["title"] for s in
+              gmail_fetch._extract_links(NO_MARKUP_HTML, "Plain NL", NOW)]
+    assert "$35B cloud deal with Nvidia-backed Lambda" in titles, titles
+
+
+def test_looks_like_headline_unit():
+    keep = ("Anthropic ships Fable 5.1", "$35B cloud deal with Lambda",
+            "Apple Watch gets an AI upgrade", "3 models worth watching")
+    drop = ("came out ahead of Opus 5", "the falls (and the fire)",
+            "Watch the recording", "Try Fable 5.1 Now", "Book a demo now", "")
+    for t in keep:
+        assert gmail_fetch._looks_like_headline(t), f"should keep: {t!r}"
+    for t in drop:
+        assert not gmail_fetch._looks_like_headline(t), f"should drop: {t!r}"
+
+
+def test_void_tags_do_not_unwind_the_ancestor_stack():
+    """<br> arrives both bare and self-closing in email HTML. An unguarded pop
+    would unwind the stack hunting a 'br' that was never pushed, so a later
+    heading anchor would lose its <h2> ancestor and be misread as plain."""
+    html = ('<html><body><h2>Section<br>title'
+            '<a href="https://nl.example/a">A properly marked headline here</a>'
+            '</h2><img src="x.png"><div>'
+            '<a href="https://nl.example/b">plain lowercase fragment link</a>'
+            '</div></body></html>')
+    titles = [s["title"] for s in gmail_fetch._extract_links(html, "S", NOW)]
+    assert titles == ["A properly marked headline here"], titles
+
+
+def test_stray_close_tag_does_not_break_extraction():
+    html = ('<html><body></span></div>'
+            '<h3><a href="https://nl.example/a">Headline after stray closers</a></h3>'
+            '</body></html>')
+    titles = [s["title"] for s in gmail_fetch._extract_links(html, "S", NOW)]
+    assert titles == ["Headline after stray closers"], titles
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

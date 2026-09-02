@@ -46,7 +46,7 @@ def credentials():
     return token, chat_id
 
 
-def api_call(method, payload, token, quiet=False):
+def api_call(method, payload, token, quiet=False, http_timeout=None):   # STEP [32]
     """POST one Bot API method. Returns the parsed `result` on success, else
     None. Never raises; never lets the token reach a log.
 
@@ -57,6 +57,11 @@ def api_call(method, payload, token, quiet=False):
     # STEP [26] 400/401 (bad token / chat id = permanent). Constants in config;
     # STEP [26] retryutil.sleep is the test-stubbed seam (no real sleeping).
     #
+    # STEP [32] http_timeout overrides the per-request read timeout, for the ONE
+    # STEP [32] caller that long-polls (approve.py's getUpdates). Default None =
+    # STEP [32] config.TIMEOUT, so every existing call site is unchanged. A 50s
+    # STEP [32] server-side wait under a 20s client timeout would fail every poll.
+    #
     # quiet=True logs failures at debug instead of warning — for calls that are
     # EXPECTED to fail routinely (answerCallbackQuery on the cron path), so a
     # normal successful approval doesn't emit a scary warning every time."""
@@ -64,7 +69,8 @@ def api_call(method, payload, token, quiet=False):
     for attempt in range(1, config.TELEGRAM_MAX_ATTEMPTS + 1):            # STEP [26]
         try:
             resp = requests.post(f"{API_BASE}/bot{token}/{method}",
-                                 json=payload, timeout=config.TIMEOUT)
+                                 json=payload,
+                                 timeout=http_timeout or config.TIMEOUT)  # STEP [32]
             body = resp.json()
         except Exception as exc:  # noqa: BLE001 — network / malformed JSON -> retry
             scrubbed = str(exc).replace(token, "<token>")

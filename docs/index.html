@@ -858,6 +858,7 @@
     <a class="rail-step" href="#step3" id="rail3"><span class="rn">3</span><span class="rl">Your take</span></a>
     <a class="rail-step" href="#step4" id="rail4"><span class="rn">4</span><span class="rl">Image</span></a>
     <a class="rail-step" href="#step5" id="rail5"><span class="rn">5</span><span class="rl">Send</span></a>
+    <a class="rail-step" href="#step6" id="rail6"><span class="rn">6</span><span class="rl">Approve</span></a>
   </div>
 </nav>
 
@@ -981,6 +982,31 @@
     </div>
   </section>
 
+  <!-- ========== 6. RUN THE APPROVAL POLLER (STEP 33) ==========
+       STEP 33 approve.yml already declares `workflow_dispatch: {}`, so this is a
+       pure frontend addition — no workflow or backend change. It does NOT approve
+       anything: it only asks GitHub to run the poller now instead of waiting for
+       the next cron tick. The tap in Telegram remains the ONLY approval
+       (hard constraint #4). -->
+  <section class="step" id="step6">
+    <h2 class="step-h">
+      <span class="step-n">6</span>
+      <span>Approve now</span>
+      <span class="step-opt">optional</span>
+    </h2>
+    <p class="step-sub">
+      Tapped &#9989; in Telegram and nothing has happened? The poller that reads your tap
+      runs on a schedule, and GitHub is often slow to start it. This runs it immediately
+      &mdash; the post goes live about half a minute later.
+      <strong>This button does not approve anything</strong> &mdash; only your
+      &#9989; tap in Telegram does that.
+    </p>
+    <div class="refresh-row">
+      <button class="btn" id="approveBtn" type="button">Run approval now</button>
+    </div>
+    <div class="status-line" id="approveStatus" aria-live="polite"></div>
+  </section>
+
 </main>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1006,6 +1032,7 @@ const LS_KEYS = {
 const WORKFLOWS = {
   refresh:  "refresh_candidates.yml",
   generate: "generate_from_selection.yml",
+  approve:  "approve.yml",                 /* STEP 33 run the poller on demand */
 };
 
 const state = {
@@ -1192,6 +1219,40 @@ async function triggerRefresh() {
   } catch (e) {
     $("refreshStatus").textContent = networkErrMsg(e);
     $("refreshStatus").className = "status-line err";
+    showToast(networkErrMsg(e), "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+/* STEP 33 Same shape as triggerRefresh above, pointed at approve.yml. Kept as a
+   sibling rather than a shared helper: two callers with different copy and
+   different status targets is not yet a pattern worth abstracting. */
+async function triggerApprove() {
+  const cfg = state.settings;
+  if (!cfg.token) { showToast("Add a GitHub PAT in Settings first.", "err"); return; }
+  if (!cfg.owner || !cfg.repo) { showToast("Add owner/repo in Settings first.", "err"); return; }
+  const btn = $("approveBtn");
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = "Queuing…";
+  try {
+    const r = await apiDispatch(WORKFLOWS.approve, { ref: cfg.branch });
+    if (r.ok) {
+      $("approveStatus").textContent =
+        "Poller queued — if you already tapped ✅ in Telegram, the post goes live in "
+        + "under a minute and the bot messages you the link. If you have not tapped yet, tap now.";
+      $("approveStatus").className = "status-line ok";
+      showToast("Approval poller queued.", "ok");
+    } else {
+      $("approveStatus").textContent = apiErrMsg(r.status);
+      $("approveStatus").className = "status-line err";
+      showToast(apiErrMsg(r.status), "err");
+    }
+  } catch (e) {
+    $("approveStatus").textContent = networkErrMsg(e);
+    $("approveStatus").className = "status-line err";
     showToast(networkErrMsg(e), "err");
   } finally {
     btn.disabled = false;
@@ -1672,6 +1733,7 @@ function init() {
   $("saveSettings").addEventListener("click", saveSettings);
   $("forgetToken").addEventListener("click", forgetToken);
   $("refreshBtn").addEventListener("click", triggerRefresh);
+  $("approveBtn").addEventListener("click", triggerApprove);       /* STEP 33 */
   $("reloadBtn").addEventListener("click", fetchCandidates);
   $("generateBtn").addEventListener("click", onGenerate);
   $("customTitle").addEventListener("input", onCustomInput);

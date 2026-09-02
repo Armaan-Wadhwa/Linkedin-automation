@@ -30,9 +30,12 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - ONE task at a time. Finish it, show the result, STOP and wait for Harvey's
   confirmation before the next task.
 - Annotate every changed line in existing code with `# FIX [N]` / `# STEP [N]`
-  comments (continue the numbering already in the files; next free number: 30).
+  comments (continue the numbering already in the files; next free number: 36).
   (25 = CI stale-checkout rebase fix; 26 = Phase 4 Task 17 retries audit;
-  29 = approve.py stale-tap Telegram nudge.)
+  29 = approve.py stale-tap Telegram nudge; 30 = r/Anthropic source removed;
+  31 = daily.yml four crons + `already_ran_today` guard; 32 = approve.py long
+  poll; 33 = dashboard "Approve now" button; 34 = missing-GMAIL-secret warning;
+  35 = newsletter title extraction.)
 - Every network call wrapped in try/except with clear logging; a failing
   source/service must NEVER crash the whole run — log, skip, continue.
 - Python 3.11+. Minimal deps: `feedparser`, `requests`, `google-genai`,
@@ -41,7 +44,7 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
 - Always state which Phase/Task you are working on at the start of a session.
 
 ## Repo layout & module contracts
-- `src/config.py` — single source of truth: 20 sources with priorities, HTTP,
+- `src/config.py` — single source of truth: 19 sources with priorities, HTTP,
   ranking, and LLM constants. No secrets ever (env-var *names* only).
 - `src/fetch.py` — `fetch_all()` → list of story dicts
   `{source_id, source_name, priority, title, link, summary, published}`.
@@ -81,7 +84,62 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   (that has its own backoff; different semantics, untouched).
 - `src/main.py` — orchestrator; resolves `history.json` at repo root from its
   own path (CWD-independent); exit 0 = draft OK, exit 1 = failure (red run =
-  alerting).
+  alerting). **STEP 31 adds `already_ran_today(now=None, pending_path=None)`**:
+  True when `pending_post.json` holds a draft created on today's UTC date, ANY
+  status (a posted or rejected draft still blocks a later cron — the question is
+  "handled today?", not "still pending?"). `run(force=False)` calls it FIRST,
+  **before `supersede_pending()`** — that rewrites the file to
+  `{"status": "superseded"}` with no `created_utc`, so a check after it always
+  reads "nothing today" and every cron regenerates, destroying the pending draft
+  on the way (`test_main.py:test_09` pins this ordering). Unprovable date
+  (missing/corrupt/naive) → False, i.e. GENERATE: the deliberate OPPOSITE of
+  `approve._is_expired`'s fail-closed stance, because here the worst case is a
+  duplicate draft that supersede clobbers anyway, while there it is posting
+  without consent. `--force` bypasses it (manual dispatch only).
+- `src/approve.py` — Run B. **STEP 32: `run()` LONG-POLLS.** getUpdates used to
+  be ONE call with `timeout: 0` — an instantaneous snapshot, so a tap landing a
+  second later waited for the next scheduled run. Now a loop polls with
+  `timeout=APPROVE_LONGPOLL_S` (50s, blocking server-side) until a decision
+  matches or `APPROVE_LONGPOLL_BUDGET_S` (540s) is spent. Three things are load-
+  bearing: (a) **`offset` advances to `max_update_id + 1` between polls** — with
+  no offset every call re-returns the same unconfirmed updates, so one stale
+  unmatched callback makes every poll return instantly and spins a hot loop for
+  the whole budget; (b) batches accumulate into ONE `updates` list so
+  `_find_override_photo` / `_find_decision` / `_stale_tap_message_id` /
+  `_confirm_updates` are untouched and see the full picture; (c) a SECOND bound,
+  `max_polls`, in case Telegram ever ignores the server-side wait. `batch is
+  None` with nothing read yet keeps the old meaning (write nothing, `return 0`,
+  retry next run); with updates already read it acts on those. Ordering
+  invariants unchanged: the decision is saved before `_confirm_updates`, and
+  `_post_approved_draft()` still re-reads from disk before posting.
+- `src/gmail_fetch.py` — IMAP newsletter ingestion (STEP 14), selected by Gmail
+  LABEL only. **STEP 35 rewrote which links become stories.** It used to treat
+  EVERY `<a>` as a story with the raw anchor text as the title, so one beehiiv
+  issue gave 8 "stories" of which 3 were headlines; the rest were mid-sentence
+  fragments, CTA buttons, ads and poll widgets. That matters more than it looks:
+  newsletter stories carry `summary = ""`, so the title is the ONLY grounding for
+  the generated bullet (hard constraint #5). `_extract_links` now picks a tier
+  PER EMAIL, after the unchanged basic filters:
+  * **Tier 1, markup** — `_LinkCollector` keeps an ancestor tag stack and flags
+    anchors inside `config.NEWSLETTER_HEADLINE_TAGS` (h1-h6/strong/b). If ANY
+    anchor is flagged, ONLY those are kept. Measured on real beehiiv mail: 3/3
+    real headlines flagged, 0/13 junk anchors flagged — perfect precision.
+  * **Tier 2, text heuristic** — for newsletters with no headline markup at all
+    (Vaibhav Sisinty; the TLDR/Rundown plain-`<li>`/`<td>` fixtures in
+    `test_gmail.py`). `_looks_like_headline` drops (a) anchors starting with a
+    LOWERCASE letter (8/8 of the measured sentence fragments; `islower()` only,
+    so `$35B cloud deal…` survives) and (b) anchors whose FIRST WORD is in
+    `NEWSLETTER_CTA_PREFIXES` — first word only, never a substring, or
+    "Apple Watch gets an AI upgrade" dies alongside "Watch the recording".
+  Headings-only was rejected on evidence: it would silently zero out any
+  newsletter that does not use heading markup. "Is the anchor preceded by text in
+  its block?" was prototyped and DISCARDED — beehiiv wraps inline links in their
+  own `<span>`, so 8/8 fragments looked standalone. `_VOID_TAGS` guards the
+  stack: `<br>` arrives bare and self-closing, and an unguarded pop would unwind
+  the whole stack hunting a tag that was never pushed. The cap is applied AFTER
+  the tier so junk cannot crowd headlines out of the 8 slots, and one INFO line
+  per email logs anchors/candidates/kept/tier so a format change is visible
+  rather than a quietly shrinking digest. Live result: 16 stories → 4, all real.
 - `src/youtube_enrich.py` — `enrich(story) -> story` (STEP 16): pulls the
   YouTube transcript for source_id 12 stories and writes it into `summary` so
   generate.py's bullet is grounded in real content, not a clickbait title.
@@ -120,11 +178,16 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   `--from-selection <path>` that delegates to `select_build.build_from_selection`
   (lazy import keeps the auto path import-light). Default (no args) is the
   unchanged auto-ranked flow.
-- `.github/workflows/daily.yml` — cron `53 2 * * *` (08:23 IST, odd minute,
-  ~35 min buffer before 9:00 target) + `workflow_dispatch`; commits
-  `history.json` + `runs.log` every run (`if: always()`) so the repo never
-  hits the 60-day inactivity auto-disable; failed generation still logs, then
-  re-fails the run.
+- `.github/workflows/daily.yml` — **FOUR crons (STEP 31)**: `53 2`, `11 3`,
+  `29 3`, `47 3` UTC = 08:23 / 08:41 / 08:59 / 09:17 IST, odd minutes, all
+  before the 9:00 target. GitHub drops most scheduled events on this repo, so
+  one cron is one chance; four is four. `main.already_ran_today()` is what makes
+  that safe — the first cron GitHub actually STARTS writes the draft, the rest
+  exit 0 without generating. `workflow_dispatch` passes `--force` (via `env:`
+  `FORCE_FLAG`, never interpolated into the `run:` string — the STEP 23 rule) so
+  a manual run can always regenerate. Commits `history.json` + `runs.log` every
+  run (`if: always()`) so the repo never hits the 60-day inactivity
+  auto-disable; failed generation still logs, then re-fails the run.
 - **Failure-visibility guard (STEP 22, all four workflows).** Every workflow
   ends with a guard step, AFTER the `if: always()` log/commit step:
   `if: always() && steps.<id>.outcome != 'success'` → echo the outcome, `exit 1`.
@@ -159,7 +222,8 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
     `reply_markup`. `notify.send_draft` is unsuitable: it always attaches the
     ✅/❌ approve buttons.
 - `.github/workflows/token_check.yml` — STEP 24, Task 16. Daily `37 3 * * *`
-  (09:07 IST; clear of daily.yml's `53 2` and approve.yml's `:23,:53`) +
+  (09:07 IST; clear of daily.yml's `53 2`/`11 3`/`29 3`/`47 3` and approve.yml's
+  `:9,:29,:49` — STEP 31/32 moved both) +
   `workflow_dispatch`. Runs `python src/token_status.py`. **No concurrency
   group and no commit step, unlike the other four** — it writes no files and
   pushes nothing, so it cannot race a git push; sharing `daily-digest` would
@@ -223,6 +287,22 @@ approval (two-run pattern) → LinkedIn Posts API → commit history log to repo
   the real cause. Also: skip link, contiguous heading levels, `<fieldset>` +
   screen-reader legend on the image radios, `aria-live` on the cap notice and
   refresh status, `aria-describedby` on the Generate button, 44px buttons.
+  **STEP 33 adds a 6th step, "Approve now"** — a button that dispatches
+  `approve.yml` (which already declared `workflow_dispatch: {}`, so this was a
+  pure frontend change: `WORKFLOWS.approve` + a `triggerApprove()` sibling of
+  `triggerRefresh()` + one listener). It runs the POLLER on demand, turning "wait
+  for the next cron" into ~30s. It does NOT approve anything and must never be
+  made to — the ✅ tap in Telegram remains the only approval (hard constraint #4),
+  and the button copy says so.
+- `.github/workflows/approve.yml` — cron `9,29,49 * * * *` (every 20 min, odd
+  minutes; was `23,53` = every 30) + `workflow_dispatch` (what the STEP 33
+  dashboard button fires). `timeout-minutes: 14` — the STEP 32 long-poll budget
+  alone is 9 min, plus checkout/setup/install. Shares
+  `concurrency.group: daily-digest`: **do not remove it.** It is the only thing
+  stopping `main.py` superseding a draft while approve.py holds an older copy in
+  memory and is about to post it — a longer-running poller makes that window
+  wider, not narrower, and STEP 31's four-cron guard is the mitigation (a
+  daily.yml run cancelled while pending simply retries 18 min later).
 
 ## Verified facts (from live testing — don't "fix" these)
 - Gemini free-tier model that works: **`gemini-3.5-flash`**. 503s under load
@@ -267,8 +347,29 @@ closing question; 3–5 niche hashtags last line; NO external links in body.
   `LINKEDIN_TOKEN_ISSUED_UTC` secret, so a missing/malformed/timezone-naive
   stamp is treated as its OWN alert ("you will get no warning before expiry"),
   never as "probably fine".
-- GitHub Actions cron is best-effort (delays up to ~50 min; occasional drops).
-- Newsletter HTML parsing (Phase 3) is fragile — always non-fatal.
+- **GitHub Actions cron is FAR worse than "delays up to ~50 min" (measured
+  2026-09-02, the STEP 30-33 investigation).** On this repo `approve.yml` asked
+  for 48 runs/day and got **5–9**; `daily.yml` held 03:30Z through Aug 26 and
+  then drifted to 07:21–08:56Z (12:51–14:26 IST). That is what "the approve
+  button does nothing" actually was: taps were read up to **8h26m** late, never
+  dropped. Diagnose from `git log` on `origin/main` — every run commits
+  `runs.log`, so commit timestamps ARE the run history (note: a run whose push
+  fails leaves no line, so this undercounts). The repo was **private** at the
+  time, i.e. on the 2,000 free Actions-minutes/month budget, which 48 polls/day
+  at ~1.5–2 billed min/job blows through; it was made public on 2026-09-02.
+  Design rule that follows: never let approval latency depend on cron frequency
+  alone — hence STEP 32's long poll and STEP 33's on-demand button.
+- **The local clone silently rots.** The bot pushes a commit every run, so a
+  clone left alone for weeks is hundreds of commits behind (566 on 2026-09-02)
+  and `pending_post.json` / `runs.log` read as if the bot died. **`git fetch`
+  before diagnosing anything**, and read state from `origin/main`, never from
+  the working tree.
+- Newsletter HTML parsing (Phase 3) is fragile — always non-fatal. **And a
+  missing Gmail secret used to be SILENT (STEP 34):** `fetch.fetch_all` gates the
+  whole Gmail pass on `GMAIL_ADDRESS` and logged the skip at DEBUG while the
+  workflows run at INFO, so newsletters vanished from every run with no trace.
+  Now a WARNING. Symptom to recognise: `docs/candidates.json` and the digest
+  contain zero `Newsletter:` sources while a local run with `.env` works fine.
 - Gemini free-tier limits/models shift — that's why the single `llm_call` seam.
 - **Test fixtures with a pinned calendar date rot against `rank`'s 48h age gate.**
   `rank.dedupe_only` scores stories against the LIVE clock (`now=None` →

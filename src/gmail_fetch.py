@@ -55,41 +55,101 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Link extraction from newsletter HTML                                  # STEP [14]
 # ---------------------------------------------------------------------------
+# STEP [35] Never pushed onto the ancestor stack and never popped from it. HTML
+# STEP [35] emails write <br> both bare and self-closing; HTMLParser reports the
+# STEP [35] latter as start+end, so an unguarded pop would unwind the whole stack
+# STEP [35] hunting for a "br" that was never pushed.
+_VOID_TAGS = frozenset((                                              # STEP [35]
+    "br", "img", "hr", "meta", "link", "input", "area", "base", "col",
+    "embed", "param", "source", "track", "wbr",
+))
+
+
 class _LinkCollector(HTMLParser):                                     # STEP [14]
-    """Collect (href, anchor_text) pairs from newsletter HTML.
+    """Collect (href, anchor_text, in_headline) triples from newsletter HTML.
 
     # STEP [14] Tolerant: nested inline tags inside <a> (e.g. <b>, <span>) have
     # STEP [14] their text folded into the anchor text. Anchors without href are
-    # STEP [14] ignored. Never raises — malformed HTML is the norm for email."""
+    # STEP [14] ignored. Never raises — malformed HTML is the norm for email.
+    # STEP [35] in_headline = the anchor sits inside config.NEWSLETTER_HEADLINE_TAGS.
+    # STEP [35] That is the single highest-precision "this is a story, not a
+    # STEP [35] sentence fragment" signal available without leaving stdlib."""
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
-        self.links = []          # list of (href, text)
+        self.links = []          # list of (href, text, in_headline)  # STEP [35]
         self._href = None        # current anchor href, or None when not inside <a>
         self._buf = []           # collected text nodes for the current anchor
+        self._stack = []         # STEP [35] open ancestor tags, outermost first
+        self._in_headline = False                                     # STEP [35]
 
     def handle_starttag(self, tag, attrs):
-        if tag.lower() == "a":
+        t = tag.lower()                                               # STEP [35]
+        if t not in _VOID_TAGS:                                       # STEP [35]
+            self._stack.append(t)                                     # STEP [35]
+        if t == "a":
             d = dict(attrs)
             href = (d.get("href") or "").strip()
             if href:                     # ignore <a name="x"> with no href
                 self._href = href
                 self._buf = []
+                # STEP [35] Captured at OPEN time: the ancestors are what matter,
+                # STEP [35] and by </a> the stack has not changed above this anchor.
+                self._in_headline = any(                              # STEP [35]
+                    a in config.NEWSLETTER_HEADLINE_TAGS for a in self._stack)
 
     def handle_data(self, data):
         if self._href is not None:       # only gather text inside an anchored <a>
             self._buf.append(data)
 
     def handle_endtag(self, tag):
-        if tag.lower() == "a" and self._href is not None:
+        t = tag.lower()                                               # STEP [35]
+        if t == "a" and self._href is not None:
             text = " ".join("".join(self._buf).split()).strip()
-            self.links.append((self._href, text))
+            self.links.append((self._href, text, self._in_headline))  # STEP [35]
             self._href = None
             self._buf = []
+            self._in_headline = False                                 # STEP [35]
+        # STEP [35] Unwind to the matching open tag, but ONLY if it is actually
+        # STEP [35] open — newsletter HTML is full of stray closers.
+        if t in _VOID_TAGS:                                           # STEP [35]
+            return                                                    # STEP [35]
+        if t in self._stack:                                          # STEP [35]
+            while self._stack:                                        # STEP [35]
+                if self._stack.pop() == t:                            # STEP [35]
+                    break                                             # STEP [35]
 
 
 # Bare-URL regex for the text/plain fallback.                           # STEP [14]
 _URL_RE = re.compile(r"https?://[^\s<>\"')]+", re.IGNORECASE)          # STEP [14]
+
+_WORD_RE = re.compile(r"[\w']+", re.UNICODE)                          # STEP [35]
+
+
+def _looks_like_headline(text):                                       # STEP [35]
+    """Tier-2 fallback test, used ONLY for newsletters with no headline markup.
+
+    # STEP [35] Two junk shapes survive the basic filters, and both are cheap to
+    # STEP [35] spot from the text alone:
+    # STEP [35]   1. A link inside a sentence, whose anchor is a fragment
+    # STEP [35]      ("came out ahead of Opus 5...", "honestly it stuck"). Every one
+    # STEP [35]      of the 8 measured on real mail started with a lowercase letter.
+    # STEP [35]      Only str.islower() is tested, so "$35B cloud deal with
+    # STEP [35]      Nvidia-backed Lambda" and other digit/symbol-led headlines live.
+    # STEP [35]   2. A button or ad ("Watch the recording", "Book more calls with
+    # STEP [35]      Aimfox Avatars"). Matched on the FIRST WORD ONLY — as a
+    # STEP [35]      substring this would also kill "Apple Watch gets an AI upgrade".
+    # STEP [35] Deliberately not a spam classifier: newsletters are capped at 2 in
+    # STEP [35] the digest, so a false drop costs nothing and a false keep costs a
+    # STEP [35] garbage bullet."""
+    if not text:                                                      # STEP [35]
+        return False                                                  # STEP [35]
+    if text[0].islower():                                             # STEP [35]
+        return False                                                  # STEP [35] mid-sentence fragment
+    words = _WORD_RE.findall(text.lower())                            # STEP [35]
+    if words and words[0] in config.NEWSLETTER_CTA_PREFIXES:          # STEP [35]
+        return False                                                  # STEP [35] button / ad
+    return True                                                       # STEP [35]
 
 
 def _extract_links(body, sender_name, email_dt, is_html=True):        # STEP [14]
@@ -117,14 +177,14 @@ def _extract_links(body, sender_name, email_dt, is_html=True):        # STEP [14
             # STEP [14] of text around a URL as the anchor).
             raw_links = []
             for m in _URL_RE.finditer(body or ""):
-                raw_links.append((m.group(0).rstrip(".,);]'\""), ""))
+                raw_links.append((m.group(0).rstrip(".,);]'\""), "", False))  # STEP [35]
     except Exception as exc:  # noqa: BLE001
         log.warning("gmail: link extraction failed (%s) — skipping email", exc)
         return []
 
-    stories = []
+    candidates = []   # STEP [35] (story, in_headline), pre-tier
     seen_urls = set()
-    for href, text in raw_links:
+    for href, text, in_headline in raw_links:                          # STEP [35]
         url = (href or "").strip()
         if not url:
             continue
@@ -139,7 +199,7 @@ def _extract_links(body, sender_name, email_dt, is_html=True):        # STEP [14
             continue  # footer / social / ad boilerplate
         if len(text) < config.NEWSLETTER_MIN_ANCHOR_CHARS:
             continue  # too short to be a real headline
-        stories.append({
+        candidates.append(({                                           # STEP [35]
             "source_id": config.NEWSLETTER_SOURCE_ID,
             "source_name": f"Newsletter: {sender_name}",
             "priority": config.NEWSLETTER_PRIORITY,
@@ -148,9 +208,28 @@ def _extract_links(body, sender_name, email_dt, is_html=True):        # STEP [14
             "summary": "",
             "published": email_dt,
             "image_url": None,
-        })
-        if len(stories) >= config.GMAIL_MAX_LINKS_PER_EMAIL:
-            break  # cap in document order
+        }, in_headline))                                               # STEP [35]
+
+    # STEP [35] TIER. If this newsletter marked ANY of its links as a headline,
+    # STEP [35] trust that completely and drop everything else — measured perfect
+    # STEP [35] precision on real beehiiv mail. Otherwise fall back to the text
+    # STEP [35] heuristic, which is what keeps plain-<li>/<td> newsletters
+    # STEP [35] (TLDR, The Rundown) working.
+    marked = [s for s, hl in candidates if hl]                         # STEP [35]
+    if marked:                                                         # STEP [35]
+        kept, tier = marked, "headline-markup"                         # STEP [35]
+    else:                                                              # STEP [35]
+        kept = [s for s, _ in candidates                               # STEP [35]
+                if _looks_like_headline(s["title"])]                   # STEP [35]
+        tier = "text-heuristic"                                        # STEP [35]
+    # STEP [35] Cap AFTER the tier, so junk that was going to be dropped anyway
+    # STEP [35] cannot crowd real headlines out of the 8 slots.
+    stories = kept[:config.GMAIL_MAX_LINKS_PER_EMAIL]                  # STEP [35]
+    # STEP [35] Logged, not silent: if beehiiv restyles and the markup tier stops
+    # STEP [35] matching, this line says so instead of the digest quietly shrinking
+    # STEP [35] (the STEP 34 lesson).
+    log.info("gmail: %s: %d anchor(s) -> %d candidate(s) -> %d kept (tier=%s)",  # STEP [35]
+             sender_name, len(raw_links), len(candidates), len(stories), tier)   # STEP [35]
     return stories
 
 

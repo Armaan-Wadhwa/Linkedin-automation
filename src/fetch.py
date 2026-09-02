@@ -240,7 +240,15 @@ def fetch_all():
             log.warning("fetch_all: Gmail newsletters failed (%s: %s) — skipped",
                         type(exc).__name__, exc)                      # STEP [14]
     else:                                                             # STEP [14]
-        log.debug("fetch_all: GMAIL_ADDRESS unset — skipping newsletters")  # STEP [14]
+        # STEP [34] WARNING, not debug. The workflows run at INFO, so the old
+        # STEP [34] debug line was invisible: newsletters silently vanished from
+        # STEP [34] every run whenever the secret was missing from GitHub, and
+        # STEP [34] the digest just quietly got smaller. Same failure class STEP
+        # STEP [34] 16 fixed for the Telegram chat id — a missing secret must be
+        # STEP [34] loud. Still non-fatal: no secret, no newsletters, run continues.
+        log.warning("fetch_all: %s is unset — NO email newsletters this run. "  # STEP [34]
+                    "Set it (and %s) in GitHub Actions secrets.",               # STEP [34]
+                    config.GMAIL_ADDRESS_ENV, config.GMAIL_APP_PASSWORD_ENV)    # STEP [34]
 
     # STEP [16] YouTube transcript enrichment — Vaibhav's channel only.
     # STEP [16] ADDITIVE and ALWAYS non-fatal: its own try/except so a transcript

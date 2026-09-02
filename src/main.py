@@ -40,6 +40,51 @@ HISTORY_PATH = os.path.join(REPO_ROOT, config.HISTORY_FILE)
 PENDING_POST_PATH = os.path.join(REPO_ROOT, config.PENDING_POST_FILE)  # STEP [8]
 
 
+def already_ran_today(now=None, pending_path=None):                    # STEP [31]
+    """True if pending_post.json holds a draft created on today's UTC date.
+
+    # STEP [31] daily.yml now fires FOUR morning crons, because GitHub drops and
+    # STEP [31] delays scheduled events badly on this repo (measured: the 02:53Z
+    # STEP [31] run landing as late as 08:56Z, i.e. 14:26 IST). The first cron
+    # STEP [31] GitHub actually starts writes the draft; this guard turns the
+    # STEP [31] other three into a green no-op instead of a second digest.
+    # STEP [31]
+    # STEP [31] MUST be called BEFORE supersede_pending() — that rewrites the file
+    # STEP [31] to {"status": "superseded"} with no created_utc, so a check made
+    # STEP [31] after it always reads "nothing today" and every cron regenerates.
+    # STEP [31]
+    # STEP [31] Unprovable date (missing/corrupt/naive stamp) -> False, i.e.
+    # STEP [31] GENERATE. Opposite of _is_expired's fail-closed stance in
+    # STEP [31] approve.py, and deliberately so: there the risk is posting
+    # STEP [31] something stale without consent, here the only risk is a
+    # STEP [31] duplicate draft that supersede_pending clobbers anyway. Missing
+    # STEP [31] the day's digest entirely is the worse failure.
+    # STEP [31]
+    # STEP [31] Any status counts, not just awaiting_approval: if today's draft
+    # STEP [31] was already posted or rejected, a later cron must NOT quietly
+    # STEP [31] produce a second one. Harvey regenerates on purpose via the
+    # STEP [31] dashboard or a manual dispatch (--force)."""
+    path = pending_path or PENDING_POST_PATH                          # STEP [31]
+    try:                                                              # STEP [31]
+        with open(path, "r", encoding="utf-8") as fh:                 # STEP [31]
+            prev = json.load(fh)                                      # STEP [31]
+    except (OSError, json.JSONDecodeError):                           # STEP [31]
+        return False                                                  # STEP [31] unreadable -> generate
+    if not isinstance(prev, dict):                                    # STEP [31]
+        return False                                                  # STEP [31]
+    try:                                                              # STEP [31]
+        created = datetime.fromisoformat(prev.get("created_utc"))     # STEP [31]
+    except (TypeError, ValueError):                                   # STEP [31]
+        return False                                                  # STEP [31] no/bad stamp -> generate
+    if created.tzinfo is None:                                        # STEP [31]
+        return False                                                  # STEP [31] naive stamp proves nothing
+    now = now or datetime.now(timezone.utc)                           # STEP [31]
+    if now.tzinfo is None:                                            # STEP [31] naive .astimezone() would
+        now = now.replace(tzinfo=timezone.utc)                        # STEP [31] silently assume LOCAL time
+    return (created.astimezone(timezone.utc).date()                   # STEP [31]
+            == now.astimezone(timezone.utc).date())                   # STEP [31]
+
+
 def supersede_pending(pending_path=None):                              # STEP [19]
     """Invalidate any un-actioned stale draft so the workflow's checkout-restore
     # STEP [19] can never leave an old draft approvable. Terminal / retryable
@@ -78,7 +123,14 @@ def supersede_pending(pending_path=None):                              # STEP [1
     return 0                                                            # STEP [19]
 
 
-def run():
+def run(force=False):                                                  # STEP [31]
+    # STEP [31] Before the supersede below, which erases the evidence.
+    if not force and already_ran_today():                              # STEP [31]
+        log.info("run: today already has a draft — skipping. This is a "  # STEP [31]
+                 "later daily.yml cron; an earlier one already generated. "  # STEP [31]
+                 "Pass --force to regenerate on purpose.")              # STEP [31]
+        return 0                                                       # STEP [31] green no-op, not a failure
+
     # STEP [8] FIRST, before anything can fail: the workflow commits
     # STEP [8] pending_post.json, so checkout restores yesterday's file on
     # STEP [8] every run. Rewrite it to a terminal status now (NOT delete —
@@ -188,6 +240,10 @@ if __name__ == "__main__":
     parser.add_argument("--from-selection", metavar="PATH", default=None,          # STEP [19]
                         help="Build the post from a JSON selection file "          # STEP [19]
                              "(dashboard manual-override path)")                  # STEP [19]
+    parser.add_argument("--force", action="store_true",                            # STEP [31]
+                        help="Generate even if today already has a draft. "        # STEP [31]
+                             "daily.yml passes this on manual dispatch only, so "  # STEP [31]
+                             "the four morning crons stay idempotent.")            # STEP [31]
     args = parser.parse_args()                                       # STEP [19]
     if args.from_selection:                                          # STEP [19]
         import select_build                                          # STEP [19] lazy: keeps the auto path import-light
@@ -200,4 +256,4 @@ if __name__ == "__main__":
             sys.exit(1)                                              # STEP [19]
         sys.exit(select_build.build_from_selection(selection))       # STEP [19]
 
-    sys.exit(run())
+    sys.exit(run(force=args.force))                                  # STEP [31]

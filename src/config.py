@@ -56,7 +56,8 @@ SOURCES = [
     (6,  "Anthropic News (taobojlen)","https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_news_rss.xml", 10),
     (7,  "Anthropic Eng (Olshansk)",  "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml", 10),
     (8,  "MarkTechPost",              "https://www.marktechpost.com/feed/",                                                         3),
-    (9,  "r/Anthropic",               "https://www.reddit.com/r/Anthropic/.rss",                                                    2),  # FIX [5] 5->2
+    # STEP [30] id 9 (r/Anthropic) removed at Harvey's request. The id is RETIRED,
+    # STEP [30] not free for reuse: history.json holds hashes recorded under it.
     (10, "r/LocalLLaMA",              "https://www.reddit.com/r/LocalLLaMA/.rss",                                                   2),  # FIX [5] 4->2
     (11, "r/OpenAI",                  "https://www.reddit.com/r/OpenAI/.rss",                                                       2),  # FIX [5] 4->2
     (12, "Vaibhav Sisinty (YouTube)", "https://www.youtube.com/feeds/videos.xml?channel_id=UClXAalunTPaX1YV185DWUeg",               4),
@@ -91,7 +92,7 @@ MAX_STORY_AGE_H = 48         # STEP [2] discard stories older than this (or unda
 RECENCY_MAX_POINTS = 12      # FIX [5] 24->12: recency is a tiebreaker, not the dominator
 TOP_N_STORIES = 5            # STEP [2] stories handed to the LLM
 MAX_PER_SOURCE_IN_TOP = 2    # FIX [5] source diversity in the final selection
-COMMUNITY_SOURCE_IDS = {9, 10, 11, 17}  # FIX [5] Reddit + HN: chatter, not announcements
+COMMUNITY_SOURCE_IDS = {10, 11, 17}     # FIX [5] Reddit + HN: chatter, not announcements  # STEP [30] 9 dropped with the source
 COMMUNITY_TOPIC_FACTOR = 0.5            # FIX [5] community posts get half the topic bonus
 HISTORY_FILE = "history.json"      # STEP [2] committed story-hash log (repo root)
 HISTORY_RETENTION_DAYS = 30        # STEP [2] prune hashes older than this
@@ -163,6 +164,21 @@ PENDING_POST_FILE = "pending_post.json"      # STEP [8] repo-root state file for
 APPROVAL_EXPIRY_H = 26
 TELEGRAM_UPDATE_LIMIT = 100   # STEP [9] getUpdates max
 
+# STEP [32] LONG POLLING. getUpdates was called once with timeout=0 — an
+# STEP [32] instantaneous snapshot — so a tap landing one second later waited for
+# STEP [32] the next scheduled run. Measured cost: taps sat unread for up to 8h26m.
+# STEP [32] With a real long poll the call BLOCKS server-side until an update
+# STEP [32] arrives, so a tap made while a run is live is acted on in seconds.
+# STEP [32] 50s per call is Telegram's usual recommendation; the budget is the
+# STEP [32] wall-clock the run will wait in total, sized to sit under approve.yml's
+# STEP [32] timeout-minutes with room for checkout+install.
+APPROVE_LONGPOLL_S = 50              # STEP [32] server-side wait per getUpdates
+APPROVE_LONGPOLL_BUDGET_S = 540      # STEP [32] 9 min of waiting per run, total
+# STEP [32] The HTTP read timeout MUST exceed the server-side wait, or every long
+# STEP [32] poll read-times-out at config.TIMEOUT (20s) and burns the STEP 26
+# STEP [32] retry budget on failures that are really just Telegram waiting.
+TELEGRAM_LONGPOLL_HTTP_TIMEOUT = APPROVE_LONGPOLL_S + 15   # STEP [32]
+
 # ---------------------------------------------------------------------------
 # LinkedIn posting (used by post_linkedin.py / approve.py)           # STEP [10]
 # ---------------------------------------------------------------------------
@@ -229,7 +245,35 @@ NEWSLETTER_BOILERPLATE = (
     "sponsor", "sponsored", "advertise", "advertising", "mailto:",
     "twitter", "x.com", "linkedin", "facebook", "instagram", "youtube",
     "tiktok", "forward to a friend", "update your profile", "manage preferences",
+    "powered by",                              # STEP [35] beehiiv/substack footer
 )
+
+# STEP [35] Newsletter TITLE QUALITY. _extract_links used to treat every <a> as a
+# STEP [35] story and the raw anchor text as the title, so one beehiiv issue gave
+# STEP [35] 8 "stories" of which 3 were headlines and the rest were mid-sentence
+# STEP [35] fragments ("came out ahead of Opus 5 on every one of the eight
+# STEP [35] benchmarks it published"), CTA buttons, ads and poll widgets. Newsletter
+# STEP [35] stories carry summary="", so the title is the ONLY thing grounding the
+# STEP [35] generated bullet — a fragment title invites an invented bullet
+# STEP [35] (hard constraint #5). Precision beats recall here: all newsletters share
+# STEP [35] source_id 18, so MAX_PER_SOURCE_IN_TOP caps the whole layer at 2.
+#
+# STEP [35] Tier 1 — markup. Measured on the real mail: anchors inside these tags
+# STEP [35] were EXACTLY the real headlines (3/3), every one of the 13 junk anchors
+# STEP [35] was plain. When a newsletter marks its headlines, believe it.
+NEWSLETTER_HEADLINE_TAGS = frozenset((
+    "h1", "h2", "h3", "h4", "h5", "h6", "strong", "b",
+))
+# STEP [35] Tier 2 — for newsletters with NO headline markup (Vaibhav Sisinty, and
+# STEP [35] the TLDR/Rundown plain-<li>/<td> layouts in test_gmail.py). Matched
+# STEP [35] against the FIRST WORD only, never as a substring: "Apple Watch gets an
+# STEP [35] AI upgrade" is a headline, "Watch the recording" is a button.
+NEWSLETTER_CTA_PREFIXES = frozenset((
+    "try", "book", "watch", "read", "get", "join", "start", "download",
+    "subscribe", "register", "claim", "buy", "shop", "order", "discover",
+    "explore", "listen", "apply", "upgrade", "unlock", "reply", "click",
+    "tap", "learn", "see", "grab", "save", "rsvp", "sponsor", "partner",
+))
 
 # ---------------------------------------------------------------------------
 # YouTube transcript enrichment (Phase 3, Task 11)                 # STEP [16]

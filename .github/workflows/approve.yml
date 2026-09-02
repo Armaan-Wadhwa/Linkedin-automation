@@ -20,7 +20,10 @@ on:
     # STEP [18] tap after 16:23 IST wasn't read until the next morning, by which
     # STEP [18] time the draft was expired/superseded. Public repo = unlimited
     # STEP [18] Actions minutes, so polling every 30 min around the clock is free.
-    - cron: '23,53 * * * *'  # every 30 min, 24h
+    # STEP [32] Every 20 min (was every 30). Each run now LONG-POLLS for up to
+    # STEP [32] 9 min instead of taking a zero-width snapshot, so this is both a
+    # STEP [32] shorter gap between runs and real coverage inside each one.
+    - cron: '9,29,49 * * * *'  # every 20 min, 24h, odd minutes  # STEP [32]
   workflow_dispatch: {}          # manual runs for testing
 
 permissions:
@@ -33,7 +36,9 @@ concurrency:
 jobs:
   approve:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # STEP [32] 10 -> 14: the long-poll budget alone is 9 min, plus checkout,
+    # STEP [32] setup-python and pip install before it. 10 would clip the tail.
+    timeout-minutes: 14   # STEP [32]
     steps:
       - name: Check out repo
         uses: actions/checkout@v4

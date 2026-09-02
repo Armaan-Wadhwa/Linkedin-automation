@@ -12,7 +12,19 @@ name: daily-digest
 
 on:
   schedule:
-    - cron: '53 2 * * *'   # 02:53 UTC = 08:23 AM IST, odd minute, ~35 min buffer
+    # STEP [31] FOUR morning crons, not one. GitHub's scheduled events are
+    # STEP [31] best-effort and this repo loses most of them: the single 02:53Z
+    # STEP [31] cron landed 03:30Z through Aug 26 (on target) and then drifted to
+    # STEP [31] 07:21-08:56Z (12:51-14:26 IST) from Aug 27. Four chances 18 min
+    # STEP [31] apart means a dropped, delayed, or concurrency-cancelled event
+    # STEP [31] doesn't cost the day. main.py's already_ran_today() guard is what
+    # STEP [31] makes this safe — the first cron GitHub actually starts writes the
+    # STEP [31] draft, the other three exit 0 without generating. Odd minutes on
+    # STEP [31] purpose: GitHub is most congested at :00.
+    - cron: '53 2 * * *'   # 08:23 IST
+    - cron: '11 3 * * *'   # 08:41 IST
+    - cron: '29 3 * * *'   # 08:59 IST
+    - cron: '47 3 * * *'   # 09:17 IST
   workflow_dispatch: {}     # manual runs for testing
 
 permissions:
@@ -60,7 +72,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}       # STEP [8]
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}             # STEP [14]
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}   # STEP [14]
-        run: python src/main.py
+          # STEP [31] Manual dispatch bypasses the once-a-day guard; the crons
+          # STEP [31] never do. Passed via env, never interpolated into the run:
+          # STEP [31] string — the STEP 23 rule, even though this value is a
+          # STEP [31] literal from our own expression and not user input.
+          FORCE_FLAG: ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}   # STEP [31]
+        # STEP [31] Unquoted on purpose: an empty FORCE_FLAG must vanish, not
+        # STEP [31] become an empty argv entry that argparse rejects.
+        run: python src/main.py $FORCE_FLAG
 
       - name: Append run log (keeps repo active)
         if: always()
