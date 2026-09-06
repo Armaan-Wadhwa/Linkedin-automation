@@ -2,7 +2,11 @@
   "draft": "Why run local AI on a single machine when you can pool your GPU power across your entire home network?\n\nAs a developer, I am closely watching the shift toward local, decentralized AI execution. Several new releases this week show how rapidly this infrastructure is maturing.\n\n🔌 NVIDIA released PAIR (Personal AI Router), an open-source virtual inference router that distributes local AI requests across RTX, DGX Spark, and Mac nodes. In a five-subagent demonstration, distributing workloads reduced execution time from 18 minutes on a single RTX Spark laptop to just 8 minutes.\n\n💻 Nous Research added a one-click local model setup to Hermes Desktop. The application automatically analyzes your hardware, matches it against your GPU, and configures llama.cpp with a hard 4-bit floor and a 64K minimum context window.\n\n🔍 Perplexity Engineering detailed the infrastructure behind pplx-embed. They are optimizing retrieval costs and quality by serving their embedding and ranking models using a custom GPU stack called Ivy, Tulip, and ROSE.\n\n🏠 Ugreen launched its HomeAgent platform at the IFA tech show. The system moves smart home management local by combining security camera storage, on-device AI, and smart home control directly onto NAS hardware.\n\nThe tooling for local AI is moving away from complex terminal configurations and toward seamless, distributed consumer setups.\n\nWhich of these local AI approaches fits best into your current development workflow?\n\n#LocalAI #NVIDIA #Perplexity #LLMs",
   "created_utc": "2026-09-06T08:56:47.775221+00:00",
   "telegram_message_id": 143,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/LR6B5640.jpeg?quality=90#038;strip=all&crop=0,0,100,100",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-09-06T08:57:27.547902+00:00",
+  "callback_update_id": 523661552,
+  "posted_utc": "2026-09-06T08:57:30.839555+00:00",
+  "linkedin_post_id": "urn:li:share:7502288862392668160"
 }
