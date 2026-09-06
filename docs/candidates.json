@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-09-06T08:34:50.312403+00:00",
+  "generated_utc": "2026-09-06T08:51:18.035975+00:00",
   "candidates": [
     {
       "candidate_id": "86a4cad259b8f00b93ccde58cb48fe493a88c1ba9705ee3ff833a59722e9e6e8",
@@ -13,48 +13,15 @@
       "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/STKS533_AI_AGENTS_HACKING_D_54a015.png?quality=90#038;strip=all&#038;crop=0,0,100,100"
     },
     {
-      "candidate_id": "1aa7c8352ac288b542f66fe04639bd00070042400d8ac98d71121f098428c28f",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "Adaption Labs Introduces ‘Invent a Dataset’: Training Data Generated From a Task Description, Not a Seed Corpus",
-      "link": "https://www.marktechpost.com/2026/09/04/datasets-invent-api-training-data-without-labeling-adaptive-data-autoscientist/",
-      "summary": "Adaption Labs has released Invent a Dataset, which generates a structured, training-ready dataset from a description of the behavior you want a model to learn. There is no seed corpus, no schema design, and no labeling guide. A single datasets.invent call sets domains, row count, output format, and language expansion, and the rows download as JSONL, JSON, CSV, or Parquet. The dataset ID then passes straight into AutoScientist, closing an intent-to-trained-model loop. The post Adaption Labs Intro",
-      "published": "2026-09-05T06:48:29+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "eae8f8b341b2bd3b533ac8bee5d2c8d94ee9aae52dab10b3bcbe1730c563740e",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "UC Berkeley Researchers Release CUA-Lite, an Open Platform Unifying Sandboxes, Data, Evaluation and RL for Computer-Use Agents",
-      "link": "https://www.marktechpost.com/2026/09/05/uc-berkeley-researchers-release-cua-lite-an-open-platform-unifying-sandboxes-data-evaluation-and-rl-for-computer-use-agents/",
-      "summary": "Training and benchmarking a computer-use agent needs four things — agents, environments, traces, and a framework to evaluate and train them — and all four ship in incompatible formats today. CUA-Lite, from a UC Berkeley led team, puts them behind one action space and one data schema, and replaces OSWorld's per-task virtual machine with a plain Docker container at 0.9 GB instead of 4.1 GB. The post UC Berkeley Researchers Release CUA-Lite, an Open Platform Unifying Sandboxes, Data, Evaluation and",
-      "published": "2026-09-06T06:11:02+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "537f4b89615bbd45bddbeb1194cfa7ccb3669da64a14a4203dfe82507a50f8eb",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "GitHub Introduces Project HydraFusion: Runtime Multi-Model Orchestration That Builds a Workflow Per Coding Task in Copilot CLI",
-      "link": "https://www.marktechpost.com/2026/09/05/github-introduces-project-hydrafusion-runtime-multi-model-orchestration-that-builds-a-workflow-per-coding-task-in-copilot-cli/",
-      "summary": "We look at Project HydraFusion, GitHub's research preview that treats workflow selection as an optimization problem rather than a model picker. We break down the three execution patterns it routes between — Single, Cascade with a quality gate, and Critique with a read-only cross-family reviewer. The post GitHub Introduces Project HydraFusion: Runtime Multi-Model Orchestration That Builds a Workflow Per Coding Task in Copilot CLI appeared first on MarkTechPost .",
-      "published": "2026-09-05T19:40:11+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "ae8354652e0cdef0d0c260992784189e43325142162025515b193636a81bb80a",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "Perplexity Details Its GPU Embedding Stack: How Ivy, Tulip and ROSE Serve pplx-embed",
-      "link": "https://www.marktechpost.com/2026/09/05/perplexity-details-its-gpu-embedding-stack-how-ivy-tulip-and-rose-serve-pplx-embed/",
-      "summary": "Retrieval quality in an AI search product is bounded by two things: how good the embedding model is, and how cheaply you can run it across an index. This week, Perplexity Engineering team published Fast Embeddings on GPUs, an under-the-hood account of the second — the serving infrastructure behind pplx-embed and the ranking models used [&#8230;] The post Perplexity Details Its GPU Embedding Stack: How Ivy, Tulip and ROSE Serve pplx-embed appeared first on MarkTechPost .",
-      "published": "2026-09-06T03:20:47+00:00",
-      "image_url": "https://s.w.org/images/core/emoji/17.0.2/72x72/25b6.png"
+      "candidate_id": "4699dd5f4f127a528d95974c21051fa08c61ba7812a14e26f6c9f94c75aaa3ab",
+      "source_id": 10,
+      "source_name": "r/LocalLLaMA",
+      "priority": 2,
+      "title": "Qwen3.8-Flash-Next-oQ4e-mtp: 45 tok/s on M4 Max, 25 tok/s on M2 Ultra for local inference — llm-bench.io",
+      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1w8qo79/qwen38flashnextoq4emtp_45_toks_on_m4_max_25_toks/",
+      "summary": "Qwen 3.8 Flash Next gives similar speed than Qwen3.8 27B on Apple Silicon. &#32; submitted by &#32; /u/DerTomsn [link] &#32; [comments]",
+      "published": "2026-09-06T08:42:30+00:00",
+      "image_url": "https://external-preview.redd.it/67PJLVXV6-D8Jud6jI777mRu9LjtCC1mg886gVJ7S-I.png?width=640&crop=smart&auto=webp&s=558cb38fdd0fb5b7bfb9c0d345166c1aaacbe90a"
     },
     {
       "candidate_id": "1f0fc6a841e4931940dc15fc38ae9ed94c4005fb87317d7c16fd1c66a31ec49c",
@@ -63,7 +30,7 @@
       "priority": 3,
       "title": "AI, Tools and Transformation",
       "link": "https://www.ben-evans.com/benedictevans/2026/9/3/ai-tools-and-transformation",
-      "summary": "Article URL: https://www.ben-evans.com/benedictevans/2026/9/3/ai-tools-and-transformation Comments URL: https://news.ycombinator.com/item?id=49582656 Points: 40 # Comments: 14",
+      "summary": "Article URL: https://www.ben-evans.com/benedictevans/2026/9/3/ai-tools-and-transformation Comments URL: https://news.ycombinator.com/item?id=49582656 Points: 45 # Comments: 16",
       "published": "2026-09-06T02:12:46+00:00",
       "image_url": null
     },
@@ -151,41 +118,8 @@
       "priority": 3,
       "title": "LLMs as a Cognitive Virus",
       "link": "https://arxiv.org/abs/2609.03344",
-      "summary": "Article URL: https://arxiv.org/abs/2609.03344 Comments URL: https://news.ycombinator.com/item?id=49580164 Points: 261 # Comments: 195",
+      "summary": "Article URL: https://arxiv.org/abs/2609.03344 Comments URL: https://news.ycombinator.com/item?id=49580164 Points: 264 # Comments: 196",
       "published": "2026-09-05T20:02:35+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "f073a663bff93573fbeef48f6f87cf649ef43bee88793c4efc508ece02b7fec9",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "NVIDIA Releases Personal AI Router (PAIR): An Open Source Virtual Inference Router that Distributes Local AI Requests Across RTX, DGX Spark, and Mac Nodes",
-      "link": "https://www.marktechpost.com/2026/09/04/nvidia-releases-personal-ai-router-pair-an-open-source-virtual-inference-router-that-distributes-local-ai-requests-across-rtx-dgx-spark-and-mac-nodes/",
-      "summary": "We look at NVIDIA Personal AI Router (PAIR), an open source virtual inference router that spreads local AI requests across the machines already on a home network. We cover how PAIR proxies existing Ollama and LM Studio endpoints so agent harnesses need no changes, and how its scheduler filters nodes on readiness, engine state, exact model presence, job load, and GPU utilization. We walk through NVIDIA's five-subagent demonstration, which averaged 18 minutes on one RTX Spark laptop against 8 minu",
-      "published": "2026-09-05T03:52:23+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "b0e4181dca67b018e66f2b644b3ddbc1e7d95bea7d4fb63373520b0361f0a336",
-      "source_id": 8,
-      "source_name": "MarkTechPost",
-      "priority": 3,
-      "title": "Nous Research Adds One-Click Local Model Setup to Hermes Desktop",
-      "link": "https://www.marktechpost.com/2026/09/05/nous-research-hermes-desktop-one-click-local-model-setup/",
-      "summary": "Nous Research has collapsed local model setup into a single click in Hermes Desktop. The app reads your hardware, fit-checks the catalog against your GPU, picks the highest-quality build that fits, downloads it, and configures llama.cpp — with a hard 4-bit floor and a 64K minimum context window. The post Nous Research Adds One-Click Local Model Setup to Hermes Desktop appeared first on MarkTechPost .",
-      "published": "2026-09-05T19:12:02+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "33571440f704267d7044fd835f9e2bce6786bb6d1bdfdbcd1a624d7899d25c13",
-      "source_id": 10,
-      "source_name": "r/LocalLLaMA",
-      "priority": 2,
-      "title": "Is 3090 + 5070 & 5060s a good idea?",
-      "link": "https://www.reddit.com/r/LocalLLaMA/comments/1w8e08d/is_3090_5070_5060s_a_good_idea/",
-      "summary": "I have a 5070 Ti and two 5060 Ti (all 16Gb cards). I planned to add another 5070 Ti giving me two pairs of 32Gb each but the NVidia prices have just jumped by 25% where I am and I've found a 3090 Founders Edition for a good chunk cheaper than the 5070 would cost. It's 8Gb more VRAM and even slightly higher memory bandwidth, but I've read that mixing Ampere with Blackwell comes with a performance hit in llama.cpp using tensor parallelism. I believe TP isn't possible at all in vLLM with mismatched",
-      "published": "2026-09-05T22:05:52+00:00",
       "image_url": null
     },
     {
@@ -371,19 +305,8 @@
       "priority": 3,
       "title": "Discovery of a new OpenAI agent message board",
       "link": "https://collusion.wiki/",
-      "summary": "https://www.reuters.com/world/europe/openai-agents-hijacked-... Comments URL: https://news.ycombinator.com/item?id=49563355 Points: 2176 # Comments: 1539",
+      "summary": "https://www.reuters.com/world/europe/openai-agents-hijacked-... Comments URL: https://news.ycombinator.com/item?id=49563355 Points: 2180 # Comments: 1539",
       "published": "2026-09-04T11:54:53+00:00",
-      "image_url": null
-    },
-    {
-      "candidate_id": "a6452dd96a3768fd863795314cb7fcd8b714958c8c7ea2b5036354ec463a7dfe",
-      "source_id": 17,
-      "source_name": "HN frontpage",
-      "priority": 3,
-      "title": "Can AI design circuit boards yet?",
-      "link": "https://eebench.org/blog/can-ai-design-circuit-boards-yet/",
-      "summary": "Article URL: https://eebench.org/blog/can-ai-design-circuit-boards-yet/ Comments URL: https://news.ycombinator.com/item?id=49569366 Points: 407 # Comments: 218",
-      "published": "2026-09-04T19:48:29+00:00",
       "image_url": null
     },
     {
@@ -440,6 +363,28 @@
       "summary": "Instagram's visible AI labels are supposed to help people quickly spot synthetically generated content at a glance. Over the last few weeks, however, users have been reporting that the system has gone haywire. They say Meta has been automatically applying an \"AI Content\" label to images that they didn't create or edit using generative AI [&#8230;]",
       "published": "2026-09-04T12:00:00+00:00",
       "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/04/268439_ai_art_label_CVirginia.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
+    },
+    {
+      "candidate_id": "db8b4c579e279bed4b1ae85ad0ef7c9993077107481914b8328576f32f7a4395",
+      "source_id": 14,
+      "source_name": "The Verge AI",
+      "priority": 3,
+      "title": "Why AI food looks like that",
+      "link": "https://www.theverge.com/ai-artificial-intelligence/989376/ai-generated-food-why-does-it-look-like-that",
+      "summary": "There is a torrent of unappetizing slop coming from restaurants, cafes, and brands that are increasingly turning to AI to generate images promoting their food. The resulting horror show includes donut shrimp, Reubens from the deep, wormlike noodles, and noodle-like pastries and stringy chicken. There's also construction material masquerading as ice cream, ice cream masquerading [&#8230;]",
+      "published": "2026-09-04T11:00:00+00:00",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/268722_Why_does_AI_food_look_like_that_CVirginia.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
+    },
+    {
+      "candidate_id": "80915dce82e5b1d290056f5b72cc0d13568e89056723cf1ec79c2686e6c39845",
+      "source_id": 14,
+      "source_name": "The Verge AI",
+      "priority": 3,
+      "title": "Microsoft’s Project Zenith is a ‘distraction-free Windows experience’ for developers",
+      "link": "https://www.theverge.com/news/990051/microsoft-project-zenith-windows-developers",
+      "summary": "Microsoft is giving its developer-optimized Windows experience a name: Project Zenith. While the software maker originally announced a similar developer-optimized Windows effort at Build earlier this year, Project Zenith is designed for new developer-focused devices with 64GB or more of unified memory. \"Project Zenith devices come with a preconfigured Windows setup for development and a [&#8230;]",
+      "published": "2026-09-04T10:44:15+00:00",
+      "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/projectzenith.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100"
     }
   ]
 }
