@@ -2,7 +2,11 @@
   "draft": "A 12B model fine-tuned on just 500 samples can now match the tool-use performance of Gemini 2.5 Pro.\n\nThe landscape of AI development is shifting rapidly from raw model scale to sophisticated data generation and hosted agent infrastructure. Here are the key updates from the past 24 hours.\n\n🛠️ Google Research released ToolGrad, an Apache-2.0 framework that inverts tool-use dataset generation by building verified API chains first. Fine-tuning Gemma-3-12B on just 500 of these samples achieved an 83.1 score on BFCL, nearly matching Gemini 2.5 Pro at 83.2.\n\n🤖 OpenAI launched its Agents API in public beta, giving developers access to the same harness and infrastructure that run Codex. Developers can run agent compute in an OpenAI-managed sandbox, their own infrastructure, or a partner sandbox.\n\n💼 OpenAI also introduced ChatGPT for Financial Services, which combines built-in financial data with their GPT-6 Astra model to assist with research, modeling, and client-ready materials.\n\n💻 Google expanded its ecosystem by making the Gemini app officially available for Windows.\n\nWe are seeing highly targeted datasets make smaller open models competitive with proprietary systems, while API providers are taking over the heavy lifting of agent sandboxing.\n\nFor developers, this means less time building basic execution harnesses and more time optimizing actual agent logic and workflows.\n\nAre you planning to offload your agent sandboxing to managed APIs, or do you prefer keeping that execution environment on your own infrastructure?\n\n#AI #LLM #OpenAI #Gemma #SoftwareEngineering",
   "created_utc": "2026-09-11T07:30:45.040356+00:00",
   "telegram_message_id": 158,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Gemini_for_Desktop_Thumbnail_20.max-600x600.format-webp.webp",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-09-11T07:36:32.543255+00:00",
+  "callback_update_id": 523661562,
+  "posted_utc": "2026-09-11T07:36:34.851034+00:00",
+  "linkedin_post_id": "urn:li:share:7504080434520100864"
 }
