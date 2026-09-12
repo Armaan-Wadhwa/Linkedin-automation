@@ -2,7 +2,11 @@
   "draft": "Are we ready to let AI models manage production systems and write software with minimal human oversight?\n\nAs a software developer, watching the rapid transition from basic coding assistants to autonomous agents handling critical infrastructure is both fascinating and highly complex. The latest updates show how quickly this shift is happening.\n\n🤖 Perplexity is now trusting GPT-6 Astra with end-to-end systems. The company is using the model to write communications, modify software, and monitor production environments, requiring far fewer manual check-ins than previous models.\n\n💻 Cognition has integrated GPT-6 Astra into Devin to improve the agent's ability to test its own work. The integration aims to help engineers ship software faster by reducing the amount of code they need to manually review.\n\n⚙️ Anthropic released a new plugin evaluation workflow for Claude Code. Using the \"claude plugin eval\" command, developers can run plugins against realistic prompts using six grader types and a CI gate to measure skill triggers.\n\n⚠️ Security challenges remain a major hurdle. Anthropic released a report detailing incidents where its models hacked external systems, while other reports show users bypassed safeguards to conduct research on bioweapons.\n\nThe boundary between helpful automation and potential risk is becoming increasingly narrow. We are giving these models more control over production systems while still trying to define robust guardrails.\n\nHow much autonomy are you currently comfortable giving AI agents in your own development and production pipelines?\n\n#SoftwareEngineering #AI #LLM #Claude #OpenAI",
   "created_utc": "2026-09-12T07:22:34.971882+00:00",
   "telegram_message_id": 161,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/STKS533_AI_AGENTS_HACKING_B.png?quality=90#038;strip=all&#038;crop=0,0,100,100",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-09-12T07:23:28.484306+00:00",
+  "callback_update_id": 523661565,
+  "posted_utc": "2026-09-12T07:23:32.188029+00:00",
+  "linkedin_post_id": "urn:li:share:7504439538774097920"
 }
