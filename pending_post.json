@@ -2,7 +2,11 @@
   "draft": "Are the world's biggest AI leaders coordination-testing a slowdown, or are we looking at a new tech cartel?\n\nThis week's developments show major shifts in how the industry is addressing rapid model scaling, safety guidelines, and local development.\n\nHere is what is happening in the space right now:\n\n🤝 Tech leaders Sam Altman of OpenAI, Dario Amodei of Anthropic, Demis Hassabis of Google DeepMind, and Elon Musk of SpaceX loosely agreed to slow down development to pace the frontier, though skeptics immediately suspect ulterior motives.\n\n📄 Microsoft published a 37-page humanist AI code of conduct amid warnings from researchers that rapid model progress could soon outpace our ability to safely deploy and verify complex systems.\n\n🇨🇳 China has officially accused Anthropic of initiating a Silent AI Cold War, highlighting the growing geopolitical friction surrounding these safety discussions.\n\n📧 On the application layer, Fyxer is combining OpenAI models with fine-tuning, memory, and real user feedback to build an executive assistant that organizes inboxes and drafts emails in each user's voice.\n\n💻 In developer communities, users testing local Qwen 3.6 and 3.8 Q5 models with a 64k context report looping and UI errors on a simple turn-based text game web app, while Claude Code handles the same iterative tasks without issues.\n\nAs safety concerns drive industry giants toward formal codes of conduct and voluntary development limits, the practical gap between open-source local setups and proprietary developer tools remains a major talking point.\n\nDo you think a voluntary agreement to pace the frontier will hold, or will geopolitical competition force these labs to keep accelerating?\n\n#AI #LLM #Claude #OpenAI #TechPolicy",
   "created_utc": "2026-09-15T08:04:44.979430+00:00",
   "telegram_message_id": 169,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2025/11/STKS522_AGI_A.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-09-15T08:05:38.099598+00:00",
+  "callback_update_id": 523661572,
+  "posted_utc": "2026-09-15T08:05:41.541038+00:00",
+  "linkedin_post_id": "urn:li:share:7505537310374146048"
 }
