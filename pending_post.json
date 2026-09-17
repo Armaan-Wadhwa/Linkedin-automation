@@ -1,8 +1,3 @@
 {
-  "draft": "Are safety guardrails in proprietary LLMs starting to break basic developer workflows?\n\nI have been tracking how safety policies and model updates are shifting the way we actually write code, manage systems, and build software. Here is what caught my eye in the latest industry updates.\n\n🚀 Google has officially released Gemini 3.8 Live and Gemini 3.8 Live Extended Thinking, alongside new documentation showing how users can use Gemini to tackle household chores, such as analyzing a photo of a broken doorknob to get repair instructions.\n\n💻 Strict guardrails in proprietary models are driving developers toward open-source alternatives. Users report Claude blocking benign tasks like checking if a PDF covers binary host virus infections or mirroring detectEVE data over rsync, whereas Deepseek V4.1 handles these technical queries without complaints.\n\n🔒 Corporate boundaries are shifting as Nvidia and Palantir have restricted the use of Anthropic and OpenAI models.\n\nAs developers, we need a realistic balance between safety and utility. When guardrails begin blocking standard rsync commands or basic academic queries, the friction can quickly stall daily operations and slow down legitimate research.\n\nAre you finding yourself switching to open-source models like Deepseek to bypass overly sensitive safety filters in your daily work?\n\n#AI #LLM #Deepseek #Claude #Gemini",
-  "created_utc": "2026-09-16T07:56:59.832341+00:00",
-  "telegram_message_id": 172,
-  "status": "awaiting_approval",
-  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/gemini_3-8_live___keyword__blog.max-600x600.format-webp.webp",
-  "image_source": "story"
+  "status": "superseded"
 }
