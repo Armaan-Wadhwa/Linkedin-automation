@@ -1,12 +1,8 @@
 {
-  "draft": "Are we ready for AI agents that keep writing code on the cloud even after we close our laptops?\n\nThe shift toward autonomous, multi-agent workflows is accelerating, and the tools we use daily are adapting to support persistent background execution.\n\nHere are the key developments in AI today:\n\n💻 Anthropic launched Claude Code Projects in beta. The update replaces folder-based projects with parallel cloud sessions where Claude acts as a coordinator, directing multiple threads on their own branches with shared memory, allowing tasks to keep running after you close your laptop.\n\n⚖️ OpenAI announced Astra for Law, a new platform designed to bring frontier intelligence, custom firm workflows, connected legal data sources, and legal-grade controls to confidential legal client work.\n\n📈 Law firm Cooley built a tool called GO Public with ChatGPT Work. The system integrates intelligence directly into the IPO process to help lawyers surface issues earlier and focus their judgment where it matters most.\n\n⚠️ Microsoft AI CEO Mustafa Suleyman publicly stated that AI threats are real, asserting in a recent interview that Anthropic is making the safety and regulation situation worse.\n\nAs developers, the transition from single-prompt chat boxes to persistent, multi-agent cloud environments changes how we think about compute, task delegation, and code management.\n\nHow comfortable are you with letting AI agents run asynchronous tasks in the cloud while you are offline?\n\n#SoftwareEngineering #AI #Claude #OpenAI #LLM",
-  "created_utc": "2026-09-18T07:38:51.114844+00:00",
-  "telegram_message_id": 179,
-  "status": "posted",
-  "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2026/05/STKB364_CLAUDE_2_C_96d15c.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100",
-  "image_source": "story",
-  "decided_utc": "2026-09-18T07:40:51.257716+00:00",
-  "callback_update_id": 523661583,
-  "posted_utc": "2026-09-18T07:40:54.579788+00:00",
-  "linkedin_post_id": "urn:li:share:7506618236038332416"
+  "draft": "Can an AI help hackers breach its biggest competitor in under three days?\n\nAs a developer, I am watching the boundaries of LLM capabilities and security shift rapidly. Today's developments highlight the dual-use nature of these models and the global struggle to control access to them.\n\n🔓 Security researchers at Hacktron used Anthropic's Claude Opus 4.8 and 5 to hack into OpenAI employee accounts in less than 72 hours. The breach allowed them to access OpenAI's GitHub repository, known as \"Monorepo,\" which reportedly contains the company's algorithmic secrets.\n\n🇨🇳 Developers in mainland China are finding unauthorized ways to buy access to Claude, ChatGPT, and Gemini, despite Claude not being officially available in the region.\n\n🇦🇺 OpenAI has released the Australian Youth Safety Blueprint, a six-pillar roadmap aimed at creating safer AI experiences that protect and empower young people.\n\nThe Hacktron breach raises serious questions about how we secure developer environments when LLMs can be weaponized to accelerate social engineering and code analysis. If an AI can help compromise a major AI lab's core repository in three days, our traditional security perimeters are no longer sufficient.\n\nHow should AI labs adapt their internal security to defend against LLM-assisted social engineering attacks?\n\n#AICybersecurity #LLM #Claude #OpenAI #ApplicationSecurity",
+  "created_utc": "2026-09-19T07:33:55.593916+00:00",
+  "telegram_message_id": 183,
+  "status": "awaiting_approval",
+  "image_url": "https://i3.ytimg.com/vi/bXIWJEVlOlk/hqdefault.jpg",
+  "image_source": "story"
 }
