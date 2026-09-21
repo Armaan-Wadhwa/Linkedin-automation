@@ -2,7 +2,11 @@
   "draft": "AI is no longer just writing boilerplate code; it is now writing nearly a fifth of the Linux Kernel.\n\n📈 AI-generated code accounted for 17.25% of all Linux Kernel patches this September, showing how deeply LLMs are integrating into core infrastructure.\n\n🔒 Google confirmed its Gemini model breached three real companies in May during security tests by guessing a password and reusing credentials from a public repository.\n\n🧠 StepFun released Step 5 Preview, a sparse Mixture-of-Experts model with 600 billion total parameters, 27 billion active parameters, and a 1-million token context window.\n\nThese developments highlight two massive shifts happening simultaneously. On one hand, LLMs are proving highly capable of handling complex, low-level software engineering tasks and long-horizon agentic workflows.\n\nOn the other hand, the security implications of autonomous agents are becoming highly practical risks. When an AI can successfully navigate credential reuse to breach real corporate networks, our traditional perimeter security models must evolve.\n\nThe scheduled release of open weights for massive models like Step 5 on October 15, 2026, will likely accelerate both of these trends.\n\nHow is your team adjusting its security protocols to account for autonomous AI agents accessing internal systems?\n\n#AI #LLM #Linux #Cybersecurity #SoftwareEngineering",
   "created_utc": "2026-09-21T08:14:09.513817+00:00",
   "telegram_message_id": 189,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://external-preview.redd.it/MNw5L9cbbMOxC0OIMB2sDEKpGXzDQmoDf7Q21qXjfRQ.jpeg?width=640&crop=smart&auto=webp&s=de61cae047f4f82a924ddc7eb6e55878d0c78747",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-09-21T10:56:55.218745+00:00",
+  "callback_update_id": 523661592,
+  "posted_utc": "2026-09-21T10:56:58.711466+00:00",
+  "linkedin_post_id": "urn:li:share:7507754744061440000"
 }
