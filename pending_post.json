@@ -1,3 +1,8 @@
 {
-  "status": "superseded"
+  "draft": "We are officially entering the era of self-improving AI agents that rewrite their own prompts, tools, and memory.\n\nToday's key developments in the AI ecosystem point to faster, cheaper models and the rise of autonomous system optimization. Here are the updates you need to know.\n\n🤖 Google Cloud AI Research has open-sourced RRSI, a framework allowing LLM agents to rewrite their own prompts, tools, and memory while keeping weights frozen. Using Claude Opus 4.8, the system boosted Terminal-Bench 2.1 scores from 74.2% to 80.2%.\n\n⚡ Anthropic released Claude Sonnet 5.5, which outputs 30% faster than Sonnet 5, scores 70.6% on Terminal-Bench 4.0, and maintains a price of $2 per million input and $10 per million output tokens.\n\n💻 OpenAI introduced GPT-6.1 Sol, a model designed for coding and computer use that offers near-Astra intelligence at one-fifth of Astra's standard API token prices.\n\n⚠️ Former OpenAI and Google DeepMind researcher Geoffrey Irving warned about superintelligence risks, stating in an interview that the chance of human extinction is about a coin flip.\n\nAs developers, we are seeing a rapid shift toward cost reduction and agentic self-improvement. The infrastructure is becoming cheaper to run, but the autonomous capabilities are scaling faster than many anticipated.\n\nWhich of these updates will have the biggest impact on your development workflow this week?\n\n#AI #LLM #Claude #OpenAI #SoftwareEngineering",
+  "created_utc": "2026-09-30T09:41:39.439971+00:00",
+  "telegram_message_id": 215,
+  "status": "awaiting_approval",
+  "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2025/09/STK485_STK414_AI_SAFETY_B.webp?quality=90#038;strip=all&#038;crop=0,0,100,100",
+  "image_source": "story"
 }
