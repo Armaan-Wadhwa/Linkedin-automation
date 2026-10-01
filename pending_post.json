@@ -2,7 +2,11 @@
   "draft": "Google just skipped Gemini 3.5 entirely to launch Gemini 4 Argon, but you cannot use it yet.\n\nGoogle DeepMind has officially announced its next frontier intelligence model, representing a major shift in their release cycle.\n\n🚀 Google bypassed a Gemini 3.5 Pro release to introduce Gemini 4 Argon, which reportedly tops both GPT-6 Astra and Claude Opus 5.5 on most industry benchmarks.\n\n💾 The model features an unprecedented 1M output token capacity, optimized for complex software engineering, cyber defense, and enterprise knowledge work in legal and finance.\n\n🔒 General access remains completely gated, with Google DeepMind SVP Koray Kavukcuoglu stating that only trusted cyber defenders can access the model right now.\n\n🛠️ Google also introduced a new feature called skills in Gemini, which is designed to automate repetitive tasks like presentation prep.\n\nAs a developer, seeing a model jump straight to version 4 with a 1 million output token limit is highly interesting. That capacity opens up massive possibilities for deep codebase analysis.\n\nHowever, the highly restricted rollout strategy highlights how sensitive these frontier models are becoming. Keeping the model gated exclusively for cybersecurity personnel suggests the capabilities are highly advanced.\n\nHow do you see a 1 million output token limit changing your daily software development workflows?\n\n#AI #LLM #Gemini #GoogleDeepMind #SoftwareEngineering",
   "created_utc": "2026-10-01T09:27:46.488684+00:00",
   "telegram_message_id": 217,
-  "status": "awaiting_approval",
+  "status": "posted",
   "image_url": "https://platform.theverge.com/wp-content/uploads/sites/2/2025/03/STK093_Google_02.jpg?quality=90#038;strip=all&#038;crop=0,0,100,100",
-  "image_source": "story"
+  "image_source": "story",
+  "decided_utc": "2026-10-01T09:28:58.493360+00:00",
+  "callback_update_id": 523661613,
+  "posted_utc": "2026-10-01T09:29:02.429297+00:00",
+  "linkedin_post_id": "urn:li:share:7511356489597554688"
 }
