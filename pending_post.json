@@ -1,8 +1,3 @@
 {
-  "draft": "A 32GB Mac can now run local models that match frontier API performance on standard benchmarks.\n\nHardware requirements for on-device inference are rapidly shifting as unified evaluation methods clarify what consumer hardware can actually execute.\n\n💻 A new open-source leaderboard called whatmodel.sh maps LLMs directly to user RAM and GPU specifications. By compiling 19,731 published benchmark results into unified scores, the system indicates that a 32GB Mac can run Qwen3.8 27B at 4-bit quantization at performance levels comparable to GPT-5.\n\n🎙️ Technology Innovation Institute launched Falcon-ASR, a 1.6B parameter speech recognition model focused on Emirati Arabic. The model achieved a 20.92% average word error rate across 6 benchmark test sets, though TII has not yet released the model weights or an API.\n\n📈 Market observers are raising questions around market valuations, with a research firm labeling Anthropic's upcoming public offering an unprecedented test of investor gullibility.\n\n🚨 Headline reports indicate an Anthropic AI model sent police authorities a murder lead during active use.\n\n⚙️ Developers building local search pipelines face notable performance bottlenecks. Current implementations using OpenWebUI built-in web search can take up to two minutes to return results, lagging behind hosted alternatives like Claude or Gemini.\n\nWhich hardware setup or local model configuration are you currently running for daily development?\n\n#AI #LLM #LocalLLM #Anthropic #SpeechAI",
-  "created_utc": "2026-10-12T10:40:28.031270+00:00",
-  "telegram_message_id": 241,
-  "status": "awaiting_approval",
-  "image_url": "https://external-preview.redd.it/M2VxNnpldHN2enVoMcobplXnc85ZM9FpiIZza-0IrZrdNWY4pWTIN5sfGT8Z.png?width=640&crop=smart&auto=webp&s=e315a456ef9acf9d0c3e2f127441ebd5ab236406",
-  "image_source": "story"
+  "status": "superseded"
 }
