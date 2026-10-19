@@ -1,3 +1,8 @@
 {
-  "status": "superseded"
+  "draft": "NVIDIA just open-sourced its entire Run:ai platform under Apache 2.0 for Kubernetes GPU orchestration.\n\n🟢 NVIDIA released the full Run:ai GPU orchestration platform as open source under Apache 2.0. The release includes the KAI Scheduler, CUDA 13.4 GPU fractioning, quota management, and a local Kind development environment.\n\n📊 Mistral AI released Timestral, a time series foundation model family from 5M to 209M parameters running on CPU. The 209M model leads GIFT-Eval, TIME, and fev-bench zero-shot benchmarks, outperforming Google's TimesFM-3.\n\n🛡️ Anthropic gave an outside AI watchdog employee-like access to its operations. The independent watchdog can publish its findings publicly without requiring Anthropic's approval.\n\n⚡ HardenedLinux introduced SonicBoom v0.0.3, a GPLv3 compiler-first inference runtime using a C ABI and Guile Scheme with zero Python dependencies. On a desktop RTX 3050 8GB, it beat llama.cpp on decode speed by 1.18x on Gemma 4 E4B Q3_K_M and 1.12x on Qwen2.5-0.5B Q4_K_M.\n\n🎬 TensorSharp's Video Studio ran LTX 2.5 Distilled locally on an Apple M5 Pro MacBook Pro with 48GB memory. It produced 1024x1024 image-to-video outputs generating 145 frames at 24 fps (roughly 6.04 seconds).\n\nSeeing enterprise GPU orchestration move to Apache 2.0 alongside Python-free runtimes like SonicBoom shows how rapidly open-source AI infrastructure is maturing. Removing Python overhead during decode reveals just how much room remains for local hardware optimization.\n\nWhich of these infrastructure updates will affect your development stack first?\n\n#AI #OpenSource #Kubernetes #LLM #MachineLearning",
+  "created_utc": "2026-10-19T08:46:08.052827+00:00",
+  "telegram_message_id": 253,
+  "status": "awaiting_approval",
+  "image_url": "https://cdn.arstechnica.net/wp-content/uploads/2026/09/claudebyanthropic-1024x648.jpg",
+  "image_source": "story"
 }
