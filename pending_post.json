@@ -1,3 +1,8 @@
 {
-  "status": "superseded"
+  "draft": "The line between competing AI ecosystems is officially blurring.\n\nHere are the top AI updates for developers today:\n\n📦 Vercel open-sourced durable-harness, a package built for crash-proof coding agents. By logging every model and tool call, it allows Pi, OpenCode, Claude Code, and Codex sessions to resume after crashes, timeouts, and redeploys on Vercel, Postgres, or a local laptop.\n\n☁️ OpenAI models and Codex workflows are coming to Google Cloud. They will be integrated directly into Gemini's Model Garden through the Google Cloud Marketplace.\n\n🤖 Anthropic introduced Claude Duet, an AI agent designed for professionals and small business owners. Launching as a research preview on web, iOS, and Android, it enters as a direct competitor to Meta's Muse and OpenAI's Dots.\n\n🚗 Google expanded conversational Gemini navigation to Apple CarPlay for US drivers today, with a global rollout underway nearly 12 months after its Android Auto launch.\n\n🛡️ OpenAI detailed its approach to working with distribution partners to uphold consistent safeguards and Usage Policies across platforms.\n\nSeeing frontier models cross into rival cloud marketplaces while open-source tooling solves agent state recovery shows how rapidly developer infrastructure is evolving.\n\nWhich of these updates will have the biggest impact on your workflow this week?\n\n#AI #LLM #SoftwareEngineering #OpenAI #Claude",
+  "created_utc": "2026-10-22T08:32:16.829749+00:00",
+  "telegram_message_id": 259,
+  "status": "awaiting_approval",
+  "image_url": "https://s.w.org/images/core/emoji/17.0.2/72x72/25b6.png",
+  "image_source": "story"
 }
