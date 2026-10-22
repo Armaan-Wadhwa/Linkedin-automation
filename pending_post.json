@@ -1,8 +1,3 @@
 {
-  "draft": "A restaurant franchisee just cut cash reconciliation time by 94% using ChatGPT Work.\n\nAI tools are moving rapidly from experimental interfaces into core backend business operations and everyday personal workflows.\n\nHere are the top technical developments and deployments from across the industry:\n\n🤖 OpenAI highlighted an independent Schlotzsky’s and Cinnabon franchisee using ChatGPT Work. The operator reduced menu repricing time by 95%, accelerated cash reconciliation by 94%, and built a workflow to free up $100K in cash flow.\n\n🚗 Google is bringing Personal Intelligence for Gemini into vehicles via Android Auto and cars with Google built-in. The integration connects data across Gmail, Calendar, Maps, Photos, YouTube, and Search, enabling in-car queries such as checking live flight statuses.\n\n🎨 Google introduced new Gemini features tailored for small business owners. The suite allows users to create custom brand image styles, extend Gemini with customized apps and skills, and produce content using structured templates.\n\n📊 Google, Temasek, and Bain & Company published the e-Conomy SEA 2026 report titled \"Building the intelligent economy.\" The research projects Southeast Asia’s digital economy to reach $368 billion as regional digital sectors expand.\n\nAs models gain deeper access to personal data across email, search, and navigation inside connected vehicles, auditing personal privacy and integration settings is becoming a key management step.\n\nWhich of these operational AI updates do you see having the biggest practical impact on your daily routine?\n\n#AI #Gemini #ChatGPT #LLM #TechNews",
-  "created_utc": "2026-10-21T08:02:08.370420+00:00",
-  "telegram_message_id": 257,
-  "status": "awaiting_approval",
-  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/October_Gemini_VSB_hero.max-600x600.format-webp.webp",
-  "image_source": "story"
+  "status": "superseded"
 }
