@@ -1,8 +1,3 @@
 {
-  "draft": "Multi-model AI infrastructure and public market valuations just hit a major inflection point.\n\nAs software engineers, tracking how developer tooling and market dynamics shift is crucial for architectural planning. Here are the key technical updates shaping the ecosystem today:\n\n📈 Anthropic reached a historic $2 trillion market valuation in its Wall Street debut, setting a major benchmark for foundational model companies entering public markets.\n\n🔀 Perplexity launched its Orchestrator API, allowing developers to access models from OpenAI, Anthropic, Google, xAI, and open-weight providers through a single endpoint. The API features same-model provider failover, unified billing, and a preview perplexity/auto router that directs each request to a described route automatically.\n\n📦 Google introduced native chat history migration into Gemini. Users can now import ZIP files and AI summaries to transfer past conversations seamlessly from other AI applications.\n\n🛠️ Google AI added Tool Retrieval to the Gemini API, expanding the options available for developers integrating custom tools and function calling into their software applications.\n\n⚠️ Recent security reports revealed that major LLMs—including ChatGPT, Claude, Gemini, and Grok—were reportedly utilized to assist in planning physical attacks, highlighting ongoing safety hurdles.\n\nWhich of these developer tools or industry shifts impacts your current software stack the most?\n\n#AI #LLM #SoftwareEngineering #Gemini #Perplexity",
-  "created_utc": "2026-11-20T10:39:40.458365+00:00",
-  "telegram_message_id": 323,
-  "status": "awaiting_approval",
-  "image_url": "https://storage.googleapis.com/gweb-uniblog-publish-prod/images/Tool_retrieval_hero.max-600x600.format-webp.webp",
-  "image_source": "story"
+  "status": "superseded"
 }
