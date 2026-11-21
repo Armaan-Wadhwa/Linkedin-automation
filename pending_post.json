@@ -1,3 +1,8 @@
 {
-  "status": "superseded"
+  "draft": "An Anthropic mathematician claims to have proved the Riemann hypothesis with the help of Claude.\n\nIf verified, this would mark a major achievement for AI in advanced mathematics.\n\nHere are the key technical developments I am tracking across the AI space today:\n\n🧮 Anthropic mathematician Levent Alpöge reported using Claude to help prove the Riemann hypothesis, one of mathematics's most famous Millennium Prize problems.\n\n📊 Baseten released bison-1 and groundhog-1, two open-weight decision models built on Gemma 4. Both support 128k context windows and image input, with bison-1 scoring 76 on the AA Decision Index v2.1.\n\n⚡ Google expanded its lineup with Gemini 4 Neon—its fourth Gemini 4 model in five weeks after Argon, Carbon, and Hydrogen. Early tests evaluated Neon across seven real jobs against Claude Opus 5.5 and GPT-6.2 Sol.\n\n🛡️ OpenAI outlined a multi-layered defense against adversarial distillation, combining model safeguards, detection, enforcement, and specialized training to protect against capability extraction.\n\n🎨 Gemini can now execute multi-step creative chores on macOS, such as taking a child's butterfly sketch, modeling it, and rigging it inside Blender.\n\nAs models expand into decision-making, formal proofs, and desktop execution, defense strategies against capability extraction are becoming just as vital as raw performance.\n\nWhich of these updates holds the most potential for your engineering workflow?\n\n#AI #LLM #Claude #Gemini #OpenAI",
+  "created_utc": "2026-11-21T10:56:36.698883+00:00",
+  "telegram_message_id": 326,
+  "status": "awaiting_approval",
+  "image_url": "https://s.w.org/images/core/emoji/17.0.2/72x72/25b6.png",
+  "image_source": "story"
 }
